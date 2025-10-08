@@ -1,0 +1,284 @@
+<!-- Add Vehicle Form -->
+<div class="card mt-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">Add New Vehicle</h4>
+    </div>
+    <div class="card-body"><style>
+    body {
+        background: 
+            radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+            linear-gradient(135deg, #2c3e50, #34495e, #2c3e50);
+        background-attachment: fixed;
+        font-family: 'Arial', sans-serif;
+        min-height: 100vh;
+    }
+
+    .container {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        box-shadow: 
+            0 10px 40px rgba(0, 0, 0, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        margin-top: 30px;
+        margin-bottom: 30px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #ff6b6b);
+        background-size: 200% 100%;
+        animation: shimmer 3s infinite linear;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.95);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 
+            0 6px 20px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        transition: left 0.5s;
+    }
+
+    .card:hover::before {
+        left: 100%;
+    }
+
+    .card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn {
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .btn:hover::before {
+        left: 100%;
+    }
+
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+        text-align: center;
+        font-size: 3rem;
+        margin-bottom: 30px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: relative;
+    }
+
+    h1::after {
+        content: '🔧 🚗 🏭';
+        display: block;
+        font-size: 2rem;
+        margin-top: 10px;
+        opacity: 0.8;
+    }
+
+    .vehicle-card {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        border-left: 5px solid;
+        border-image: linear-gradient(135deg, #667eea, #764ba2) 1;
+        transition: all 0.3s ease;
+    }
+
+    .part-item {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        border: none;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .form-control {
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: translateY(-2px);
+    }
+
+    /* Animated background elements */
+    .floating-shapes {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    .shape {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        animation: float 20s infinite linear;
+    }
+
+    .shape:nth-child(1) { width: 80px; height: 80px; top: 20%; left: 10%; animation-delay: 0s; }
+    .shape:nth-child(2) { width: 120px; height: 120px; top: 60%; left: 80%; animation-delay: -5s; }
+    .shape:nth-child(3) { width: 60px; height: 60px; top: 80%; left: 20%; animation-delay: -10s; }
+    .shape:nth-child(4) { width: 100px; height: 100px; top: 30%; left: 70%; animation-delay: -15s; }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        25% { transform: translateY(-20px) rotate(90deg); }
+        50% { transform: translateY(0px) rotate(180deg); }
+        75% { transform: translateY(20px) rotate(270deg); }
+    }
+</style>
+        <!-- VIN Scanner Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">🚀 Quick VIN Scanner</h5>
+                        <p class="text-muted">Scan VIN barcode with your camera to auto-fill vehicle info</p>
+                        
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">VIN Number</label>
+                                    <div class="input-group">
+                                        <input type="text" id="vinInput" class="form-control" placeholder="1HGBH41JXMN109186" maxlength="17">
+                                        <button class="btn btn-warning" type="button" onclick="startVINScanner()">
+                                            📷 Scan VIN
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Or enter manually, then click "Lookup Vehicle"</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-success me-2" onclick="lookupVIN()">
+                                    🔍 Lookup Vehicle
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="clearVINData()">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Camera Preview -->
+                        <div id="cameraContainer" class="mt-3" style="display: none;">
+                            <div class="border rounded p-3 bg-light">
+                                <h6>Camera Scanner</h6>
+                                <video id="cameraPreview" width="100%" height="200" style="border: 2px solid #ccc; border-radius: 5px;"></video>
+                                <div class="mt-2">
+                                    <button class="btn btn-success btn-sm" onclick="captureVIN()">
+                                        ✅ Capture VIN
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="stopVINScanner()">
+                                        ❌ Stop Camera
+                                    </button>
+                                </div>
+                                <small class="text-muted">Point camera at VIN barcode (usually on dashboard)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vehicle Details Form -->
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Make *</label>
+                <input type="text" id="make" class="form-control" placeholder="Ford, Toyota, etc.">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Model *</label>
+                <input type="text" id="model" class="form-control" placeholder="F150, Camry, etc.">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Year *</label>
+                <input type="number" id="year" class="form-control" placeholder="2020">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Price $ *</label>
+                <input type="number" id="price" class="form-control" placeholder="1500">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Location</label>
+                <input type="text" id="location" class="form-control" placeholder="Row A-12">
+            </div>
+            
+            <!-- Additional auto-filled fields -->
+            <div class="col-md-4">
+                <label class="form-label">Color</label>
+                <input type="text" id="color" class="form-control" placeholder="Auto-filled from VIN">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Engine</label>
+                <input type="text" id="engine" class="form-control" placeholder="Auto-filled from VIN">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Trim</label>
+                <input type="text" id="trim" class="form-control" placeholder="Auto-filled from VIN">
+            </div>
+            
+            <!-- Rest of your existing form (Photo Upload, Parts, etc.) remains the same -->
+            <div class="col-12">
+                <label class="form-label">Vehicle Photo</label>
+                <input type="file" id="photoUpload" class="form-control" accept="image/*">
+                <small class="text-muted">Take a photo with your phone or upload existing</small>
+            </div>
+            
+            <!-- Your existing parts section continues here... -->
