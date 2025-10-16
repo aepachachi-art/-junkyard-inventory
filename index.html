@@ -186,6 +186,25 @@
             50% { transform: translateY(0px) rotate(180deg); }
             75% { transform: translateY(20px) rotate(270deg); }
         }
+
+        .vehicle-image {
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .parts-section {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .part-item {
+            padding: 8px 12px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -418,286 +437,392 @@
         </div>
     </div>
 
-   <script>
-// Inventory data storage
-let inventory = JSON.parse(localStorage.getItem('junkyardInventory')) || [];
+    <script>
+// Enhanced inventory system with photos and parts tracking
+let inventory = [];
+let currentParts = []; // Temporary storage for parts being added
 
-// Test if basic JavaScript works
-console.log('Script loaded!');
-
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded');
-    displayInventory();
+// Add common parts with one click
+function addCommonPart(partName) {
+    const prices = {
+        'engine': 500,
+        'transmission': 300,
+        'doors': 100,
+        'wheels': 50,
+        'battery': 80,
+        'alternator': 120
+    };
     
-    // Add basic click handlers to all buttons for testing
-    document.querySelectorAll('button').forEach(button => {
-        button.addEventListener('click', function(e) {
-            console.log('Button clicked:', this.textContent.trim());
-        });
-    });
-});
+    const newPart = {
+        id: Date.now() + Math.random(),
+        name: partName,
+        price: prices[partName],
+        condition: 'good',
+        status: 'available'
+    };
+    
+    currentParts.push(newPart);
+    updatePartsPreview();
+}
 
-// VIN Scanner Functions (placeholder - will need actual implementation)
+// Add custom part
+function addCustomPart() {
+    const name = document.getElementById('customPartName').value;
+    const price = document.getElementById('customPartPrice').value;
+    
+    if (name && price) {
+        const newPart = {
+            id: Date.now() + Math.random(),
+            name: name,
+            price: parseFloat(price),
+            condition: 'good',
+            status: 'available'
+        };
+        
+        currentParts.push(newPart);
+        updatePartsPreview();
+        
+        // Clear inputs
+        document.getElementById('customPartName').value = '';
+        document.getElementById('customPartPrice').value = '';
+    } else {
+        alert('Please enter both part name and price!');
+    }
+}
+
+// Update parts preview display
+function updatePartsPreview() {
+    const preview = document.getElementById('partsPreview');
+    
+    if (currentParts.length === 0) {
+        preview.innerHTML = '<small class="text-muted">No parts added yet.</small>';
+        return;
+    }
+    
+    preview.innerHTML = currentParts.map(part => `
+        <span class="badge bg-secondary me-2 mb-2 p-2">
+            ${part.name} - $${part.price}
+            <button class="btn-close btn-close-white ms-1" style="font-size: 0.7rem;" 
+                    onclick="removePart(${part.id})"></button>
+        </span>
+    `).join('');
+}
+
+// Remove part from current selection
+function removePart(partId) {
+    currentParts = currentParts.filter(part => part.id !== partId);
+    updatePartsPreview();
+}
+
+// VIN Scanner Functions
+let cameraStream = null;
+
+// Start camera for VIN scanning
 function startVINScanner() {
-    console.log('VIN Scanner started');
-    alert('VIN Scanner would start here. This requires camera access and barcode scanning libraries.');
+    console.log('Starting VIN scanner...');
+    
+    // Check if camera is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Camera not available on this device');
+        return;
+    }
+    
+    // Show camera container
+    document.getElementById('cameraContainer').style.display = 'block';
+    
+    // Access camera
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(stream) {
+        cameraStream = stream;
+        const video = document.getElementById('cameraPreview');
+        video.srcObject = stream;
+        video.play();
+    })
+    .catch(function(err) {
+        console.error('Camera error:', err);
+        alert('Cannot access camera: ' + err.message);
+    });
 }
 
+// Stop camera
 function stopVINScanner() {
-    console.log('VIN Scanner stopped');
-    alert('VIN Scanner stopped');
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    document.getElementById('cameraContainer').style.display = 'none';
 }
 
+// Capture VIN (placeholder)
 function captureVIN() {
-    console.log('VIN captured');
-    alert('VIN capture functionality');
+    alert('VIN capture would process barcode here. Using demo data instead.');
+    document.getElementById('vinInput').value = '1HGBH41JXMN109186';
+    lookupVIN();
 }
 
+// Lookup VIN data
 function lookupVIN() {
     const vin = document.getElementById('vinInput').value;
     if (!vin) {
         alert('Please enter a VIN number');
         return;
     }
-    console.log('Looking up VIN:', vin);
-    alert(`VIN lookup would fetch data for: ${vin}\n\nThis would typically call a VIN API to get vehicle details.`);
     
-    // Simulate API response - in real app, this would come from an API
-    document.getElementById('make').value = 'Toyota';
-    document.getElementById('model').value = 'Camry';
-    document.getElementById('year').value = '2020';
+    if (vin.length !== 17) {
+        alert('VIN must be 17 characters long');
+        return;
+    }
+    
+    useMockVINData(vin);
 }
 
+// Fallback mock data for demo purposes
+function useMockVINData(vin) {
+    const mockMakes = ['FORD', 'CHEVROLET', 'TOYOTA', 'HONDA', 'DODGE'];
+    const mockModels = {
+        'FORD': ['F-150', 'EXPLORER', 'FOCUS', 'MUSTANG'],
+        'CHEVROLET': ['SILVERADO', 'EQUINOX', 'MALIBU', 'CAMARO'],
+        'TOYOTA': ['CAMRY', 'COROLLA', 'RAV4', 'TACOMA'],
+        'HONDA': ['CIVIC', 'ACCORD', 'CR-V', 'PILOT'],
+        'DODGE': ['CHARGER', 'CHALLENGER', 'DURANGO', 'RAM 1500']
+    };
+    
+    const makeIndex = vin.charCodeAt(0) % mockMakes.length;
+    const make = mockMakes[makeIndex];
+    const models = mockModels[make];
+    const modelIndex = vin.charCodeAt(1) % models.length;
+    const model = models[modelIndex];
+    const year = 2000 + (vin.charCodeAt(6) % 24);
+    
+    document.getElementById('make').value = make;
+    document.getElementById('model').value = model;
+    document.getElementById('year').value = year;
+    document.getElementById('color').value = ['Black', 'White', 'Silver', 'Red', 'Blue'][vin.charCodeAt(3) % 5];
+    document.getElementById('engine').value = ['V6 3.5L', 'V8 5.0L', 'I4 2.0L', 'V6 3.0L'][vin.charCodeAt(4) % 4];
+    document.getElementById('trim').value = ['Base', 'LT', 'Sport', 'Limited'][vin.charCodeAt(5) % 4];
+    
+    autoGenerateParts(model);
+    
+    alert(`✅ Demo vehicle data loaded!\n${make} ${model} ${year}\n(Using demo data - real API unavailable)`);
+}
+
+// Auto-generate common parts based on vehicle type
+function autoGenerateParts(vehicleType) {
+    currentParts = [];
+    
+    addCommonPart('engine');
+    addCommonPart('transmission');
+    addCommonPart('battery');
+    addCommonPart('alternator');
+    addCommonPart('wheels');
+    
+    if (vehicleType.includes('TRUCK') || vehicleType.includes('PICKUP') || vehicleType.includes('F-150') || vehicleType.includes('SILVERADO') || vehicleType.includes('TACOMA') || vehicleType.includes('RAM')) {
+        addCommonPart('tailgate');
+        addCommonPart('bedliner');
+    } else if (vehicleType.includes('SUV') || vehicleType.includes('VAN') || vehicleType.includes('EXPLORER') || vehicleType.includes('EQUINOX') || vehicleType.includes('RAV4') || vehicleType.includes('CR-V') || vehicleType.includes('PILOT') || vehicleType.includes('DURANGO')) {
+        addCommonPart('seats');
+        addCommonPart('rearhatch');
+    } else {
+        addCommonPart('doors');
+        addCommonPart('hood');
+    }
+}
+
+// Clear VIN data
 function clearVINData() {
     document.getElementById('vinInput').value = '';
     document.getElementById('make').value = '';
     document.getElementById('model').value = '';
     document.getElementById('year').value = '';
-    console.log('VIN data cleared');
-}
-
-// Parts Management
-let selectedParts = [];
-
-function addCommonPart(partName) {
-    console.log('Adding common part:', partName);
-    const part = {
-        name: partName,
-        price: getDefaultPartPrice(partName)
-    };
-    selectedParts.push(part);
+    document.getElementById('color').value = '';
+    document.getElementById('engine').value = '';
+    document.getElementById('trim').value = '';
+    currentParts = [];
     updatePartsPreview();
 }
 
-function addCustomPart() {
-    const name = document.getElementById('customPartName').value;
-    const price = document.getElementById('customPartPrice').value;
-    
-    if (!name) {
-        alert('Please enter a part name');
-        return;
-    }
-    
-    const part = {
-        name: name,
-        price: price || '0.00'
-    };
-    selectedParts.push(part);
-    updatePartsPreview();
-    
-    // Clear inputs
-    document.getElementById('customPartName').value = '';
-    document.getElementById('customPartPrice').value = '';
-}
-
-function getDefaultPartPrice(partName) {
-    const prices = {
-        'engine': '500.00',
-        'transmission': '300.00',
-        'doors': '100.00',
-        'wheels': '50.00',
-        'battery': '80.00',
-        'alternator': '60.00'
-    };
-    return prices[partName] || '0.00';
-}
-
-function updatePartsPreview() {
-    const preview = document.getElementById('partsPreview');
-    
-    if (selectedParts.length === 0) {
-        preview.innerHTML = '<small class="text-muted">No parts added yet.</small>';
-        return;
-    }
-    
-    let html = '';
-    selectedParts.forEach((part, index) => {
-        html += `
-            <div class="part-item p-2 mb-2 d-flex justify-content-between align-items-center">
-                <span>${part.name} - $${part.price}</span>
-                <button class="btn btn-danger btn-sm" onclick="removePart(${index})">×</button>
-            </div>
-        `;
-    });
-    preview.innerHTML = html;
-}
-
-function removePart(index) {
-    selectedParts.splice(index, 1);
-    updatePartsPreview();
-}
-
-// Vehicle Management
+// Main function to add vehicle
 function addVehicle() {
     const make = document.getElementById('make').value;
     const model = document.getElementById('model').value;
     const year = document.getElementById('year').value;
     const price = document.getElementById('price').value;
-    
-    if (!make || !model || !year || !price) {
-        alert('Please fill in all required fields (Make, Model, Year, Price)');
-        return;
+    const location = document.getElementById('location').value;
+    const vin = document.getElementById('vinInput').value;
+    const color = document.getElementById('color').value;
+    const engine = document.getElementById('engine').value;
+    const trim = document.getElementById('trim').value;
+    const photoFile = document.getElementById('photoUpload').files[0];
+
+    if (make && model && year && price) {
+        const photoPromise = photoFile ? readFileAsDataURL(photoFile) : Promise.resolve(null);
+        
+        photoPromise.then(photoData => {
+            const newVehicle = {
+                id: Date.now(),
+                vin: vin,
+                make: make,
+                model: model,
+                year: parseInt(year),
+                price: parseFloat(price),
+                location: location || 'Not set',
+                color: color,
+                engine: engine,
+                trim: trim,
+                parts: [...currentParts],
+                photo: photoData,
+                dateAdded: new Date().toLocaleDateString()
+            };
+
+            inventory.push(newVehicle);
+            updateInventoryList();
+            clearForm();
+            saveInventory();
+            
+            alert(`✅ Vehicle added! ${currentParts.length} parts included.`);
+        });
+    } else {
+        alert('Please fill at least Make, Model, Year, and Price!');
     }
-    
-    const vehicle = {
-        id: Date.now(), // Simple ID generation
-        make: make,
-        model: model,
-        year: year,
-        price: price,
-        location: document.getElementById('location').value,
-        color: document.getElementById('color').value,
-        engine: document.getElementById('engine').value,
-        trim: document.getElementById('trim').value,
-        parts: [...selectedParts],
-        dateAdded: new Date().toLocaleDateString()
-    };
-    
-    inventory.push(vehicle);
-    saveInventory();
-    displayInventory();
-    clearForm();
-    
-    alert(`✅ ${year} ${make} ${model} added to inventory!`);
-    console.log('Vehicle added:', vehicle);
 }
 
+// Helper function to read photo files
+function readFileAsDataURL(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.readAsDataURL(file);
+    });
+}
+
+// Update inventory display
+function updateInventoryList() {
+    const inventoryList = document.getElementById('inventoryList');
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    let filteredInventory = inventory;
+    
+    if (searchTerm) {
+        filteredInventory = inventory.filter(vehicle => 
+            vehicle.make.toLowerCase().includes(searchTerm) ||
+            vehicle.model.toLowerCase().includes(searchTerm) ||
+            vehicle.location.toLowerCase().includes(searchTerm) ||
+            vehicle.parts.some(part => part.name.toLowerCase().includes(searchTerm))
+        );
+    }
+    
+    inventoryList.innerHTML = '';
+
+    if (filteredInventory.length === 0) {
+        inventoryList.innerHTML = '<div class="col-12"><div class="alert alert-info">No vehicles found.</div></div>';
+        return;
+    }
+
+    filteredInventory.forEach(vehicle => {
+        const vehicleCard = document.createElement('div');
+        vehicleCard.className = 'col-md-6 col-lg-4 mb-4';
+        vehicleCard.innerHTML = `
+            <div class="vehicle-card card h-100">
+                <div class="card-body">
+                    ${vehicle.photo ? `<img src="${vehicle.photo}" class="vehicle-image img-fluid mb-3" alt="${vehicle.make} ${vehicle.model}">` : ''}
+                    <h5 class="card-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</h5>
+                    <p class="card-text">
+                        <strong>Price:</strong> $${vehicle.price}<br>
+                        <strong>Location:</strong> ${vehicle.location}<br>
+                        <strong>Added:</strong> ${vehicle.dateAdded}
+                    </p>
+                    
+                    <div class="parts-section">
+                        <h6>Parts (${vehicle.parts.length}):</h6>
+                        ${vehicle.parts.map(part => `
+                            <div class="part-item d-flex justify-content-between align-items-center">
+                                <span>${part.name} - $${part.price}</span>
+                                <select class="form-select form-select-sm" style="width: auto;" onchange="updatePartStatus(${vehicle.id}, ${part.id}, this.value)">
+                                    <option value="available" ${part.status === 'available' ? 'selected' : ''}>Available</option>
+                                    <option value="sold" ${part.status === 'sold' ? 'selected' : ''}>Sold</option>
+                                    <option value="reserved" ${part.status === 'reserved' ? 'selected' : ''}>Reserved</option>
+                                </select>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${vehicle.id})">Delete Vehicle</button>
+                </div>
+            </div>
+        `;
+        inventoryList.appendChild(vehicleCard);
+    });
+}
+
+// Update part status
+function updatePartStatus(vehicleId, partId, newStatus) {
+    const vehicle = inventory.find(v => v.id === vehicleId);
+    if (vehicle) {
+        const part = vehicle.parts.find(p => p.id === partId);
+        if (part) {
+            part.status = newStatus;
+            saveInventory();
+            
+            // Update visual appearance
+            const partElement = event.target.closest('.part-item');
+            if (partElement) {
+                partElement.style.background = newStatus === 'sold' ? '#d4edda' : 
+                                             newStatus === 'reserved' ? '#fff3cd' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                partElement.style.color = newStatus === 'sold' || newStatus === 'reserved' ? '#000' : '#fff';
+            }
+        }
+    }
+}
+
+// Clear form after adding vehicle
 function clearForm() {
     document.getElementById('make').value = '';
     document.getElementById('model').value = '';
     document.getElementById('year').value = '';
     document.getElementById('price').value = '';
     document.getElementById('location').value = '';
+    document.getElementById('photoUpload').value = '';
+    document.getElementById('customPartName').value = '';
+    document.getElementById('customPartPrice').value = '';
+    document.getElementById('vinInput').value = '';
     document.getElementById('color').value = '';
     document.getElementById('engine').value = '';
     document.getElementById('trim').value = '';
-    document.getElementById('vinInput').value = '';
-    selectedParts = [];
+    currentParts = [];
     updatePartsPreview();
 }
 
-function displayInventory() {
-    const inventoryList = document.getElementById('inventoryList');
-    
-    if (inventory.length === 0) {
-        inventoryList.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-info">No vehicles in inventory yet. Add your first vehicle above!</div>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    inventory.forEach(vehicle => {
-        html += `
-            <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card vehicle-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</h5>
-                        <p class="card-text">
-                            <strong>Price:</strong> $${vehicle.price}<br>
-                            <strong>Location:</strong> ${vehicle.location || 'Not specified'}<br>
-                            <strong>Color:</strong> ${vehicle.color || 'Not specified'}<br>
-                            <strong>Engine:</strong> ${vehicle.engine || 'Not specified'}<br>
-                            <strong>Parts:</strong> ${vehicle.parts.length} parts available
-                        </p>
-                    </div>
-                    <div class="card-footer">
-                        <button class="btn btn-info btn-sm" onclick="viewVehicle(${vehicle.id})">View Details</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${vehicle.id})">Delete</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    inventoryList.innerHTML = html;
-}
-
-function viewVehicle(id) {
-    const vehicle = inventory.find(v => v.id === id);
-    if (vehicle) {
-        alert(`Vehicle Details:\n\n${vehicle.year} ${vehicle.make} ${vehicle.model}\nPrice: $${vehicle.price}\nLocation: ${vehicle.location}\nParts: ${vehicle.parts.map(p => p.name).join(', ')}`);
-    }
-}
-
+// Delete vehicle
 function deleteVehicle(id) {
-    if (confirm('Are you sure you want to delete this vehicle?')) {
-        inventory = inventory.filter(v => v.id !== id);
+    if (confirm('Are you sure you want to delete this vehicle and all its parts?')) {
+        inventory = inventory.filter(vehicle => vehicle.id !== id);
+        updateInventoryList();
         saveInventory();
-        displayInventory();
     }
 }
 
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', updateInventoryList);
+
+// Save/load inventory
 function saveInventory() {
     localStorage.setItem('junkyardInventory', JSON.stringify(inventory));
 }
 
-// Search functionality
-document.getElementById('searchInput').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    
-    if (searchTerm.length === 0) {
-        displayInventory();
-        return;
+function loadInventory() {
+    const saved = localStorage.getItem('junkyardInventory');
+    if (saved) {
+        inventory = JSON.parse(saved);
+        updateInventoryList();
     }
-    
-    const filtered = inventory.filter(vehicle => 
-        vehicle.make.toLowerCase().includes(searchTerm) ||
-        vehicle.model.toLowerCase().includes(searchTerm) ||
-        vehicle.location.toLowerCase().includes(searchTerm) ||
-        vehicle.parts.some(part => part.name.toLowerCase().includes(searchTerm))
-    );
-    
-    const inventoryList = document.getElementById('inventoryList');
-    
-    if (filtered.length === 0) {
-        inventoryList.innerHTML = `
-            <div class="col-12">
-                <div class="alert alert-warning">No vehicles found matching "${searchTerm}"</div>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    filtered.forEach(vehicle => {
-        html += `
-            <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card vehicle-card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</h5>
-                        <p class="card-text">
-                            <strong>Price:</strong> $${vehicle.price}<br>
-                            <strong>Location:</strong> ${vehicle.location || 'Not specified'}<br>
-                            <strong>Parts:</strong> ${vehicle.parts.length} parts available
-                        </p>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    inventoryList.innerHTML = html;
+}
+
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    loadInventory();
+    console.log('Junkyard Inventory Manager loaded!');
 });
-</script>
+    </script>
+</body>
+</html>
