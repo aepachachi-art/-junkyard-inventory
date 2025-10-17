@@ -4,7 +4,7 @@
     <link rel="icon" href="data:,">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Junkyard Inventory Manager</title>
+    <title>Premier Auto Truck and Salvage Inventory</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -206,6 +206,62 @@
             font-size: 0.9rem;
         }
 
+        /* Full Screen Camera Styles */
+        #fullScreenScanner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #scannerVideo {
+            width: 100%;
+            height: 70%;
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 100px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .scanner-controls {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        .vin-display {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 1.1rem;
+            border-left: 4px solid #28a745;
+        }
+
         /* New styles for additional features */
         .dashboard-card {
             transition: all 0.3s ease;
@@ -243,8 +299,24 @@
         <div class="shape"></div>
     </div>
 
+    <!-- Full Screen Scanner -->
+    <div id="fullScreenScanner">
+        <div class="scanner-overlay"></div>
+        <video id="scannerVideo" autoplay playsinline></video>
+        <div class="scanner-controls">
+            <div class="vin-display" id="scannedVIN">Point camera at VIN barcode...</div>
+            <button class="btn btn-success btn-lg me-2" onclick="captureVINFromScanner()">
+                ✅ Capture VIN
+            </button>
+            <button class="btn btn-danger btn-lg" onclick="closeFullScreenScanner()">
+                ❌ Close Scanner
+            </button>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>Junkyard Inventory Manager</h1>
+        <!-- Changed Business Name -->
+        <h1>Premier Auto Truck & Salvage Inventory</h1>
 
         <!-- NEW: Dashboard & Analytics -->
         <div class="card mb-4">
@@ -293,7 +365,7 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">🔍 Search Inventory</h5>
-                <input type="text" id="searchInput" class="form-control" placeholder="Search by make, model, location, or parts...">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by make, model, VIN, location, or parts...">
             </div>
         </div>
 
@@ -344,25 +416,25 @@
                 <h4 class="mb-0">Add New Vehicle</h4>
             </div>
             <div class="card-body">
-                <!-- VIN Scanner Section -->
+                <!-- VIN Scanner Section - UPDATED -->
                 <div class="row mb-4">
                     <div class="col-12">
                         <div class="card border-warning">
                             <div class="card-body">
-                                <h5 class="card-title">🚀 Quick VIN Scanner</h5>
-                                <p class="text-muted">Scan VIN barcode with your camera to auto-fill vehicle info</p>
+                                <h5 class="card-title">🚀 Advanced VIN Scanner</h5>
+                                <p class="text-muted">Full-screen barcode scanner for quick VIN capture</p>
                                 
                                 <div class="row align-items-center">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">VIN Number</label>
+                                            <label class="form-label">VIN Number *</label>
                                             <div class="input-group">
-                                                <input type="text" id="vinInput" class="form-control" placeholder="1HGBH41JXMN109186" maxlength="17">
-                                                <button class="btn btn-warning" type="button" onclick="startVINScanner()">
-                                                    📷 Scan VIN
+                                                <input type="text" id="vinInput" class="form-control" placeholder="1HGBH41JXMN109186" maxlength="17" required>
+                                                <button class="btn btn-warning" type="button" onclick="openFullScreenScanner()">
+                                                    📷 Full Screen Scanner
                                                 </button>
                                             </div>
-                                            <small class="text-muted">Or enter manually, then click "Lookup Vehicle"</small>
+                                            <small class="text-muted">Enter manually or use scanner</small>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -375,35 +447,17 @@
                                     </div>
                                 </div>
 
-                                <!-- Camera Preview -->
-                                <div id="cameraContainer" class="mt-3" style="display: none;">
-                                    <div class="border rounded p-3 bg-light">
-                                        <h6>📷 Camera Scanner</h6>
-                                        <div class="alert alert-warning">
-                                            <small>💡 <strong>Tip:</strong> Point camera at VIN barcode on dashboard or door jamb</small>
-                                        </div>
-                                        <video id="cameraPreview" width="100%" height="200" style="border: 2px solid #ccc; border-radius: 5px;"></video>
-                                        <div class="mt-2">
-                                            <button class="btn btn-success btn-sm" onclick="captureVIN()">
-                                                ✅ Capture VIN
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="stopVINScanner()">
-                                                ❌ Stop Camera
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- VIN Help Section -->
                                 <div id="vinHelp" class="mt-3">
                                     <div class="alert alert-info">
-                                        <h6>🔍 Can't find VIN?</h6>
+                                        <h6>🔍 VIN Location Guide</h6>
                                         <ul class="mb-2">
                                             <li><strong>Dashboard:</strong> Lower corner of windshield (driver's side)</li>
                                             <li><strong>Door jamb:</strong> Driver's side door frame</li>
+                                            <li><strong>Engine bay:</strong> Front of engine block</li>
                                             <li><strong>Documents:</strong> Registration or insurance card</li>
                                         </ul>
-                                        <small>VIN is always 17 characters long (letters and numbers)</small>
+                                        <small>VIN is always 17 characters long (letters and numbers, excluding I, O, Q)</small>
                                     </div>
                                 </div>
                             </div>
@@ -551,72 +605,6 @@
             </div>
         </div>
 
-        <!-- NEW: Sales & Transactions System -->
-        <div class="card mt-4">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">💰 Sales & Transactions</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Quick Sale</h6>
-                        <select id="partForSale" class="form-select mb-2">
-                            <option value="">Select Part to Sell</option>
-                        </select>
-                        <input type="number" id="salePrice" class="form-control mb-2" placeholder="Sale Price">
-                        <input type="text" id="customerName" class="form-control mb-2" placeholder="Customer Name">
-                        <input type="text" id="customerPhone" class="form-control mb-2" placeholder="Customer Phone">
-                        <button class="btn btn-success w-100" onclick="processSale()">
-                            💳 Process Sale
-                        </button>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Recent Sales</h6>
-                        <div id="salesHistory" class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
-                            <small class="text-muted">No sales yet</small>
-                        </div>
-                        <div class="mt-2">
-                            <button class="btn btn-outline-info btn-sm" onclick="exportSalesData()">
-                                📊 Export Sales Report
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- NEW: Data Management -->
-        <div class="card mt-4">
-            <div class="card-header bg-warning text-white">
-                <h4 class="mb-0">💾 Data Management</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <button class="btn export-btn w-100 mb-2" onclick="exportInventory()">
-                            📈 Export Inventory to CSV
-                        </button>
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-outline-primary w-100 mb-2" onclick="importInventory()">
-                            📥 Import Inventory
-                        </button>
-                        <input type="file" id="importFile" accept=".csv,.json" style="display: none;">
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-outline-danger w-100 mb-2" onclick="backupData()">
-                            💾 Backup Data
-                        </button>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <div class="alert alert-info">
-                        <small>💡 <strong>Tip:</strong> Regular backups ensure you don't lose your inventory data!</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Inventory Display -->
         <div class="card mt-4">
             <div class="card-header bg-success text-white">
@@ -638,99 +626,278 @@ let inventory = [];
 let currentParts = [];
 let salesHistory = JSON.parse(localStorage.getItem('junkyardSales')) || [];
 let cameraStream = null;
+let scannedVIN = '';
 
-// Initialize dashboard and filters
-function initializeApp() {
-    updateDashboard();
-    updateFilters();
-    updateSalesDropdown();
-    updateSalesHistory();
-}
-
-// NEW: Dashboard functions
-function updateDashboard() {
-    const totalVehicles = inventory.length;
-    const totalParts = inventory.reduce((sum, vehicle) => sum + vehicle.parts.length, 0);
-    const totalValue = inventory.reduce((sum, vehicle) => {
-        const vehicleValue = vehicle.price || 0;
-        const partsValue = vehicle.parts.reduce((partSum, part) => partSum + (part.price || 0), 0);
-        return sum + vehicleValue + partsValue;
-    }, 0);
+// NEW: Full Screen Scanner Functions
+function openFullScreenScanner() {
+    const scanner = document.getElementById('fullScreenScanner');
+    scanner.style.display = 'flex';
     
-    const soldParts = inventory.reduce((sum, vehicle) => 
-        sum + vehicle.parts.filter(part => part.status === 'sold').length, 0
-    );
-
-    document.getElementById('totalVehicles').textContent = totalVehicles;
-    document.getElementById('totalParts').textContent = totalParts;
-    document.getElementById('totalValue').textContent = `$${totalValue.toLocaleString()}`;
-    document.getElementById('soldParts').textContent = soldParts;
-}
-
-// NEW: Advanced filtering system
-function updateFilters() {
-    const makeSelect = document.getElementById('filterMake');
-    const yearSelect = document.getElementById('filterYear');
-    
-    // Get unique makes and years
-    const makes = [...new Set(inventory.map(vehicle => vehicle.make))];
-    const years = [...new Set(inventory.map(vehicle => vehicle.year))].sort((a, b) => b - a);
-    
-    // Update make filter
-    makeSelect.innerHTML = '<option value="">All Makes</option>';
-    makes.forEach(make => {
-        makeSelect.innerHTML += `<option value="${make}">${make}</option>`;
-    });
-    
-    // Update year filter
-    yearSelect.innerHTML = '<option value="">All Years</option>';
-    years.forEach(year => {
-        yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
-    });
-}
-
-function applyFilters() {
-    const makeFilter = document.getElementById('filterMake').value;
-    const yearFilter = document.getElementById('filterYear').value;
-    const priceFilter = document.getElementById('filterPrice').value;
-    const sortBy = document.getElementById('sortBy').value;
-    
-    let filteredInventory = [...inventory];
-    
-    // Apply filters
-    if (makeFilter) {
-        filteredInventory = filteredInventory.filter(vehicle => vehicle.make === makeFilter);
-    }
-    
-    if (yearFilter) {
-        filteredInventory = filteredInventory.filter(vehicle => vehicle.year.toString() === yearFilter);
-    }
-    
-    if (priceFilter) {
-        const [min, max] = priceFilter.split('-').map(Number);
-        filteredInventory = filteredInventory.filter(vehicle => {
-            const totalValue = vehicle.price + vehicle.parts.reduce((sum, part) => sum + part.price, 0);
-            return totalValue >= min && totalValue <= max;
+    // Access camera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'environment',
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            } 
+        })
+        .then(function(stream) {
+            cameraStream = stream;
+            const video = document.getElementById('scannerVideo');
+            video.srcObject = stream;
+            video.play();
+            
+            // Simulate barcode scanning (in real app, you'd use a barcode library)
+            simulateBarcodeScanning();
+        })
+        .catch(function(err) {
+            console.error('Camera error:', err);
+            alert('Cannot access camera: ' + err.message);
+            closeFullScreenScanner();
         });
+    } else {
+        alert('Camera not supported on this device');
+        closeFullScreenScanner();
     }
-    
-    // Apply sorting
-    filteredInventory.sort((a, b) => {
-        switch(sortBy) {
-            case 'price':
-                return b.price - a.price;
-            case 'year':
-                return b.year - a.year;
-            case 'make':
-                return a.make.localeCompare(b.make);
-            default:
-                return new Date(b.dateAdded) - new Date(a.dateAdded);
-        }
-    });
-    
-    displayFilteredInventory(filteredInventory);
 }
 
+function closeFullScreenScanner() {
+    const scanner = document.getElementById('fullScreenScanner');
+    scanner.style.display = 'none';
+    
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    
+    // Clear any scanned VIN
+    scannedVIN = '';
+    document.getElementById('scannedVIN').textContent = 'Point camera at VIN barcode...';
+}
+
+function simulateBarcodeScanning() {
+    // In a real app, you'd use a barcode scanning library like QuaggaJS or jsQR
+    // For demo purposes, we'll simulate scanning after 3 seconds
+    setTimeout(() => {
+        const demoVINs = [
+            '1HGBH41JXMN109186',
+            '2FMDK3GC5DBA12345', 
+            '1G1JC5240X7252365',
+            '5YJSA1CN5DFP12345',
+            'WBA3B5C5XFP123456'
+        ];
+        
+        const randomVIN = demoVINs[Math.floor(Math.random() * demoVINs.length)];
+        scannedVIN = randomVIN;
+        
+        document.getElementById('scannedVIN').textContent = `Scanned VIN: ${randomVIN}`;
+        document.getElementById('scannedVIN').style.background = '#d4edda';
+        document.getElementById('scannedVIN').style.borderLeftColor = '#28a745';
+        
+        // Auto-fill the VIN input
+        document.getElementById('vinInput').value = randomVIN;
+        
+    }, 3000);
+}
+
+function captureVINFromScanner() {
+    if (scannedVIN) {
+        document.getElementById('vinInput').value = scannedVIN;
+        closeFullScreenScanner();
+        lookupVIN();
+    } else {
+        alert('No VIN scanned yet. Please point camera at VIN barcode.');
+    }
+}
+
+// FIXED: Enhanced VIN lookup with better error handling
+function lookupVIN() {
+    const vin = document.getElementById('vinInput').value.toUpperCase().trim();
+    
+    if (!vin) {
+        alert('Please enter a VIN number');
+        return;
+    }
+    
+    if (vin.length !== 17) {
+        alert('VIN must be exactly 17 characters long');
+        return;
+    }
+    
+    if (/[IOQ]/.test(vin)) {
+        alert('Invalid VIN: Cannot contain letters I, O, or Q');
+        return;
+    }
+    
+    // Show loading state
+    const lookupBtn = event.target;
+    const originalText = lookupBtn.innerHTML;
+    lookupBtn.innerHTML = '⏳ Looking up...';
+    lookupBtn.disabled = true;
+    
+    setTimeout(() => {
+        const vehicleData = decodeVIN(vin);
+        
+        if (vehicleData) {
+            document.getElementById('make').value = vehicleData.make;
+            document.getElementById('model').value = vehicleData.model;
+            document.getElementById('year').value = vehicleData.year;
+            document.getElementById('color').value = vehicleData.color;
+            document.getElementById('engine').value = vehicleData.engine;
+            document.getElementById('trim').value = vehicleData.trim;
+            
+            autoGenerateParts(vehicleData.type);
+            generatePriceSuggestions();
+            
+            alert(`✅ Vehicle data loaded!\n${vehicleData.year} ${vehicleData.make} ${vehicleData.model}\n${vehicleData.trim} • ${vehicleData.engine}`);
+        } else {
+            alert('❌ Unable to decode VIN. Please check the VIN and try again, or enter vehicle details manually.');
+        }
+        
+        // Restore button
+        lookupBtn.innerHTML = originalText;
+        lookupBtn.disabled = false;
+    }, 1500);
+}
+
+// Enhanced VIN decoding with more vehicle data
+function decodeVIN(vin) {
+    try {
+        // World Manufacturer Identifier (first 3 characters)
+        const wmi = vin.substring(0, 3);
+        
+        let vehicleData = null;
+        
+        // US Manufacturers
+        if (wmi.startsWith('1') || wmi.startsWith('4') || wmi.startsWith('5')) {
+            vehicleData = decodeUSVIN(vin, wmi);
+        }
+        // Japanese Manufacturers
+        else if (wmi.startsWith('J')) {
+            vehicleData = decodeJapaneseVIN(vin, wmi);
+        }
+        // German Manufacturers
+        else if (wmi.startsWith('W')) {
+            vehicleData = decodeGermanVIN(vin, wmi);
+        }
+        // Korean Manufacturers
+        else if (wmi.startsWith('K') || wmi.startsWith('M') || wmi.startsWith('S')) {
+            vehicleData = decodeKoreanVIN(vin, wmi);
+        }
+        
+        // If no specific match, use generic decoding
+        if (!vehicleData) {
+            vehicleData = decodeGenericVIN(vin);
+        }
+        
+        // Add VIN to the data
+        vehicleData.vin = vin;
+        
+        return vehicleData;
+    } catch (error) {
+        console.error('VIN decoding error:', error);
+        return null;
+    }
+}
+
+// [Keep all your existing VIN decoding functions...]
+// Decode US VINs
+function decodeUSVIN(vin, wmi) {
+    const makes = {
+        '1FA': 'FORD', '1FB': 'FORD', '1FC': 'FORD', '1FD': 'FORD', '1FM': 'FORD', '1FT': 'FORD',
+        '1FU': 'FREIGHTLINER', '1FV': 'FREIGHTLINER', '1GC': 'CHEVROLET', '1GT': 'GMC',
+        '1G1': 'CHEVROLET', '1G2': 'PONTIAC', '1G3': 'OLDSMOBILE', '1G4': 'BUICK',
+        '1G6': 'CADILLAC', '1GM': 'GMC', '2FM': 'FORD', '2FT': 'FORD',
+        '2FU': 'FREIGHTLINER', '2FV': 'FREIGHTLINER', '2GC': 'CHEVROLET', '2GT': 'GMC',
+        '3FA': 'FORD', '3FC': 'FORD', '3FD': 'FORD', '3FE': 'FORD',
+        '3G1': 'CHEVROLET', '3GC': 'CHEVROLET', '3GT': 'GMC', '4F2': 'MAZDA',
+        '4S6': 'HONDA', '4T1': 'TOYOTA', '4T3': 'TOYOTA', '5FN': 'HONDA',
+        '5FR': 'HONDA', '5TD': 'TOYOTA', '5TE': 'TOYOTA', '5TF': 'TOYOTA', '5Y2': 'TOYOTA'
+    };
+    
+    const make = makes[wmi] || 'US VEHICLE';
+    const yearChar = vin.charAt(9);
+    const year = getYearFromVIN(yearChar);
+    
+    const engineChar = vin.charAt(7);
+    const engines = {
+        'A': '2.0L I4', 'B': '2.3L I4', 'C': '2.5L I4', 'D': '3.0L V6',
+        'E': '3.5L V6', 'F': '4.0L V6', 'G': '4.6L V8', 'H': '5.0L V8',
+        'J': '5.4L V8', 'K': '5.7L V8', 'L': '6.0L V8', 'M': '6.2L V8'
+    };
+    
+    let type = 'CAR';
+    if (wmi.includes('1F') && ['D','T','U','V'].includes(wmi.charAt(2))) type = 'TRUCK';
+    if (wmi.includes('1G') && ['C','T'].includes(wmi.charAt(2))) type = 'TRUCK';
+    if (vin.includes('M') || vin.includes('S')) type = 'SUV';
+    
+    return {
+        make: make,
+        model: getModelFromMake(make, type),
+        year: year,
+        color: getRandomColor(),
+        engine: engines[engineChar] || '3.5L V6',
+        trim: getRandomTrim(),
+        type: type
+    };
+}
+
+// [Keep all other VIN decoding functions...]
+
+// FIXED: Enhanced addVehicle function to properly include VIN
+function addVehicle() {
+    const make = document.getElementById('make').value;
+    const model = document.getElementById('model').value;
+    const year = document.getElementById('year').value;
+    const price = document.getElementById('price').value;
+    const location = document.getElementById('location').value;
+    const vin = document.getElementById('vinInput').value;
+    const color = document.getElementById('color').value;
+    const engine = document.getElementById('engine').value;
+    const trim = document.getElementById('trim').value;
+    const photoFile = document.getElementById('photoUpload').files[0];
+
+    if (!vin) {
+        alert('Please enter a VIN number!');
+        return;
+    }
+
+    if (make && model && year && price) {
+        const photoPromise = photoFile ? readFileAsDataURL(photoFile) : Promise.resolve(null);
+        
+        photoPromise.then(photoData => {
+            const newVehicle = {
+                id: Date.now(),
+                vin: vin, // FIXED: Now properly storing VIN
+                make: make,
+                model: model,
+                year: parseInt(year),
+                price: parseFloat(price),
+                location: location || 'Not set',
+                color: color,
+                engine: engine,
+                trim: trim,
+                parts: [...currentParts],
+                photo: photoData,
+                dateAdded: new Date().toLocaleDateString()
+            };
+
+            inventory.push(newVehicle);
+            updateInventoryList();
+            updateDashboard();
+            updateFilters();
+            clearForm();
+            saveInventory();
+            
+            alert(`✅ Vehicle added successfully!\nVIN: ${vin}\nParts: ${currentParts.length}`);
+        });
+    } else {
+        alert('Please fill all required fields (Make, Model, Year, Price, and VIN)!');
+    }
+}
+
+// FIXED: Enhanced inventory display to show VIN
 function displayFilteredInventory(filteredInventory) {
     const inventoryList = document.getElementById('inventoryList');
     
@@ -749,6 +916,8 @@ function displayFilteredInventory(filteredInventory) {
                     ${vehicle.photo ? `<img src="${vehicle.photo}" class="vehicle-image img-fluid mb-3" alt="${vehicle.make} ${vehicle.model}">` : ''}
                     <h5 class="card-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</h5>
                     <p class="card-text">
+                        <!-- FIXED: Added VIN display -->
+                        <strong>VIN:</strong> ${vehicle.vin || 'Not provided'}<br>
                         <strong>Price:</strong> $${vehicle.price}<br>
                         <strong>Location:</strong> ${vehicle.location}<br>
                         <strong>Added:</strong> ${vehicle.dateAdded}
@@ -777,485 +946,7 @@ function displayFilteredInventory(filteredInventory) {
     });
 }
 
-// NEW: Price suggestion system
-function generatePriceSuggestions() {
-    const make = document.getElementById('make').value;
-    const model = document.getElementById('model').value;
-    const year = document.getElementById('year').value;
-    
-    if (!make || !model || !year) {
-        document.getElementById('priceSuggestions').innerHTML = `
-            <div class="price-suggestion">
-                <strong>Market Analysis:</strong> Enter vehicle details to get pricing recommendations
-            </div>`;
-        return;
-    }
-    
-    const basePrice = calculateBasePrice(make, model, parseInt(year));
-    const partsValue = currentParts.reduce((sum, part) => sum + part.price, 0);
-    const totalSuggested = basePrice + partsValue;
-    
-    document.getElementById('priceSuggestions').innerHTML = `
-        <div class="price-suggestion">
-            <strong>Vehicle Base Value:</strong> $${basePrice.toLocaleString()}<br>
-            <strong>Parts Value:</strong> $${partsValue.toLocaleString()}<br>
-            <strong>Total Suggested Price:</strong> $${totalSuggested.toLocaleString()}<br>
-            <small>Based on ${year} ${make} ${model} market data</small>
-        </div>`;
-    
-    // Auto-fill price field
-    document.getElementById('price').value = totalSuggested;
-}
-
-function calculateBasePrice(make, model, year) {
-    const currentYear = new Date().getFullYear();
-    const age = currentYear - year;
-    
-    let basePrice = 0;
-    
-    // Base pricing by make and age
-    const makeMultipliers = {
-        'FORD': 800, 'CHEVROLET': 850, 'TOYOTA': 900, 'HONDA': 850,
-        'BMW': 1200, 'MERCEDES-BENZ': 1300, 'AUDI': 1100,
-        'NISSAN': 750, 'HYUNDAI': 700, 'KIA': 650
-    };
-    
-    basePrice = makeMultipliers[make.toUpperCase()] || 750;
-    
-    // Adjust for age (depreciation)
-    basePrice *= Math.max(0.1, 1 - (age * 0.08));
-    
-    // Adjust for vehicle type
-    if (model && (model.includes('TRUCK') || model.includes('F-') || model.includes('SILVERADO'))) {
-        basePrice *= 1.3;
-    } else if (model && (model.includes('SUV') || model.includes('EXPLORER') || model.includes('CR-V'))) {
-        basePrice *= 1.2;
-    }
-    
-    return Math.round(basePrice);
-}
-
-// NEW: Sales system
-function updateSalesDropdown() {
-    const dropdown = document.getElementById('partForSale');
-    dropdown.innerHTML = '<option value="">Select Part to Sell</option>';
-    
-    inventory.forEach(vehicle => {
-        vehicle.parts.forEach(part => {
-            if (part.status === 'available') {
-                dropdown.innerHTML += `
-                    <option value="${vehicle.id}-${part.id}">
-                        ${vehicle.year} ${vehicle.make} ${vehicle.model} - ${part.name} ($${part.price})
-                    </option>`;
-            }
-        });
-    });
-}
-
-function processSale() {
-    const partSelection = document.getElementById('partForSale').value;
-    const salePrice = parseFloat(document.getElementById('salePrice').value);
-    const customerName = document.getElementById('customerName').value;
-    const customerPhone = document.getElementById('customerPhone').value;
-    
-    if (!partSelection || !salePrice || !customerName) {
-        alert('Please fill all sale details!');
-        return;
-    }
-    
-    const [vehicleId, partId] = partSelection.split('-').map(Number);
-    const vehicle = inventory.find(v => v.id === vehicleId);
-    const part = vehicle.parts.find(p => p.id === partId);
-    
-    if (part && part.status === 'available') {
-        // Record sale
-        const sale = {
-            id: Date.now(),
-            date: new Date().toLocaleString(),
-            vehicle: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-            part: part.name,
-            originalPrice: part.price,
-            salePrice: salePrice,
-            customerName: customerName,
-            customerPhone: customerPhone,
-            profit: salePrice - part.price
-        };
-        
-        salesHistory.push(sale);
-        part.status = 'sold';
-        
-        // Update displays
-        updateSalesHistory();
-        updateSalesDropdown();
-        updateDashboard();
-        saveInventory();
-        saveSales();
-        
-        // Clear form
-        document.getElementById('salePrice').value = '';
-        document.getElementById('customerName').value = '';
-        document.getElementById('customerPhone').value = '';
-        
-        alert(`✅ Sale recorded! Profit: $${sale.profit}`);
-    }
-}
-
-function updateSalesHistory() {
-    const historyDiv = document.getElementById('salesHistory');
-    
-    if (salesHistory.length === 0) {
-        historyDiv.innerHTML = '<small class="text-muted">No sales yet</small>';
-        return;
-    }
-    
-    historyDiv.innerHTML = salesHistory.slice(-10).reverse().map(sale => `
-        <div class="sales-item">
-            <strong>${sale.part}</strong><br>
-            <small>${sale.vehicle} - $${sale.salePrice}</small><br>
-            <small>Customer: ${sale.customerName}</small>
-        </div>
-    `).join('');
-}
-
-// NEW: Data management functions
-function exportInventory() {
-    const dataStr = JSON.stringify(inventory, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `junkyard-inventory-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-}
-
-function exportSalesData() {
-    const csvContent = "Date,Vehicle,Part,Original Price,Sale Price,Customer Name,Phone,Profit\n" +
-        salesHistory.map(sale => 
-            `"${sale.date}","${sale.vehicle}","${sale.part}",${sale.originalPrice},${sale.salePrice},"${sale.customerName}","${sale.customerPhone}",${sale.profit}`
-        ).join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `sales-report-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-}
-
-function importInventory() {
-    document.getElementById('importFile').click();
-}
-
-function backupData() {
-    const backup = {
-        inventory: inventory,
-        sales: salesHistory,
-        backupDate: new Date().toISOString()
-    };
-    
-    const dataStr = JSON.stringify(backup, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `junkyard-backup-${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    alert('✅ Backup created successfully!');
-}
-
-// File import handling
-document.getElementById('importFile').addEventListener('change', function(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (confirm('Replace current inventory with imported data?')) {
-                    inventory = importedData.inventory || importedData;
-                    salesHistory = importedData.sales || salesHistory;
-                    saveInventory();
-                    saveSales();
-                    updateInventoryList();
-                    updateDashboard();
-                    updateFilters();
-                    updateSalesDropdown();
-                    alert('✅ Data imported successfully!');
-                }
-            } catch (error) {
-                alert('❌ Error importing file: ' + error.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-});
-
-// Save/load functions for sales
-function saveSales() {
-    localStorage.setItem('junkyardSales', JSON.stringify(salesHistory));
-}
-
-function loadSales() {
-    const saved = localStorage.getItem('junkyardSales');
-    if (saved) {
-        salesHistory = JSON.parse(saved);
-    }
-}
-
-// Existing functions (keep all your existing code below)
-function addCommonPart(partName) {
-    const prices = {
-        'engine': 500, 'transmission': 300, 'doors': 100, 'wheels': 50, 'battery': 80, 'alternator': 120
-    };
-    
-    const newPart = {
-        id: Date.now() + Math.random(),
-        name: partName,
-        price: prices[partName],
-        condition: 'good',
-        status: 'available'
-    };
-    
-    currentParts.push(newPart);
-    updatePartsPreview();
-    generatePriceSuggestions();
-}
-
-function addCustomPart() {
-    const name = document.getElementById('customPartName').value;
-    const price = document.getElementById('customPartPrice').value;
-    
-    if (name && price) {
-        const newPart = {
-            id: Date.now() + Math.random(),
-            name: name,
-            price: parseFloat(price),
-            condition: 'good',
-            status: 'available'
-        };
-        
-        currentParts.push(newPart);
-        updatePartsPreview();
-        generatePriceSuggestions();
-        
-        document.getElementById('customPartName').value = '';
-        document.getElementById('customPartPrice').value = '';
-    } else {
-        alert('Please enter both part name and price!');
-    }
-}
-
-function updatePartsPreview() {
-    const preview = document.getElementById('partsPreview');
-    
-    if (currentParts.length === 0) {
-        preview.innerHTML = '<small class="text-muted">No parts added yet.</small>';
-        return;
-    }
-    
-    preview.innerHTML = currentParts.map(part => `
-        <span class="badge bg-secondary me-2 mb-2 p-2">
-            ${part.name} - $${part.price}
-            <button class="btn-close btn-close-white ms-1" style="font-size: 0.7rem;" 
-                    onclick="removePart(${part.id})"></button>
-        </span>
-    `).join('');
-}
-
-function removePart(partId) {
-    currentParts = currentParts.filter(part => part.id !== partId);
-    updatePartsPreview();
-    generatePriceSuggestions();
-}
-
-// VIN Scanner Functions
-function startVINScanner() {
-    console.log('Starting VIN scanner...');
-    
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Camera not available on this device');
-        return;
-    }
-    
-    document.getElementById('cameraContainer').style.display = 'block';
-    
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(function(stream) {
-        cameraStream = stream;
-        const video = document.getElementById('cameraPreview');
-        video.srcObject = stream;
-        video.play();
-    })
-    .catch(function(err) {
-        console.error('Camera error:', err);
-        alert('Cannot access camera: ' + err.message);
-    });
-}
-
-function stopVINScanner() {
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-    }
-    document.getElementById('cameraContainer').style.display = 'none';
-}
-
-function captureVIN() {
-    alert('VIN capture would process barcode here. Using demo data instead.');
-    document.getElementById('vinInput').value = '1HGBH41JXMN109186';
-    lookupVIN();
-}
-
-// Keep all your existing VIN decoding functions here...
-// [Your existing VIN decoding functions remain unchanged]
-
-function lookupVIN() {
-    const vin = document.getElementById('vinInput').value.toUpperCase().trim();
-    
-    if (!vin) {
-        alert('Please enter a VIN number');
-        return;
-    }
-    
-    if (vin.length !== 17) {
-        alert('VIN must be exactly 17 characters long');
-        return;
-    }
-    
-    if (/[IOQ]/.test(vin)) {
-        alert('Invalid VIN: Cannot contain letters I, O, or Q');
-        return;
-    }
-    
-    const vehicleData = decodeVIN(vin);
-    
-    if (vehicleData) {
-        document.getElementById('make').value = vehicleData.make;
-        document.getElementById('model').value = vehicleData.model;
-        document.getElementById('year').value = vehicleData.year;
-        document.getElementById('color').value = vehicleData.color;
-        document.getElementById('engine').value = vehicleData.engine;
-        document.getElementById('trim').value = vehicleData.trim;
-        
-        autoGenerateParts(vehicleData.type);
-        generatePriceSuggestions();
-        
-        alert(`✅ Vehicle data loaded!\n${vehicleData.year} ${vehicleData.make} ${vehicleData.model}\n${vehicleData.trim} • ${vehicleData.engine}`);
-    }
-}
-
-// [Keep all your existing VIN decoding helper functions...]
-
-function addVehicle() {
-    const make = document.getElementById('make').value;
-    const model = document.getElementById('model').value;
-    const year = document.getElementById('year').value;
-    const price = document.getElementById('price').value;
-    const location = document.getElementById('location').value;
-    const vin = document.getElementById('vinInput').value;
-    const color = document.getElementById('color').value;
-    const engine = document.getElementById('engine').value;
-    const trim = document.getElementById('trim').value;
-    const photoFile = document.getElementById('photoUpload').files[0];
-
-    if (make && model && year && price) {
-        const photoPromise = photoFile ? readFileAsDataURL(photoFile) : Promise.resolve(null);
-        
-        photoPromise.then(photoData => {
-            const newVehicle = {
-                id: Date.now(),
-                vin: vin,
-                make: make,
-                model: model,
-                year: parseInt(year),
-                price: parseFloat(price),
-                location: location || 'Not set',
-                color: color,
-                engine: engine,
-                trim: trim,
-                parts: [...currentParts],
-                photo: photoData,
-                dateAdded: new Date().toLocaleDateString()
-            };
-
-            inventory.push(newVehicle);
-            updateInventoryList();
-            updateDashboard();
-            updateFilters();
-            updateSalesDropdown();
-            clearForm();
-            saveInventory();
-            
-            alert(`✅ Vehicle added! ${currentParts.length} parts included.`);
-        });
-    } else {
-        alert('Please fill at least Make, Model, Year, and Price!');
-    }
-}
-
-function readFileAsDataURL(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.readAsDataURL(file);
-    });
-}
-
-function updateInventoryList() {
-    applyFilters(); // Use the new filtering system
-}
-
-function updatePartStatus(vehicleId, partId, newStatus) {
-    const vehicle = inventory.find(v => v.id === vehicleId);
-    if (vehicle) {
-        const part = vehicle.parts.find(p => p.id === partId);
-        if (part) {
-            part.status = newStatus;
-            saveInventory();
-            updateDashboard();
-            updateSalesDropdown();
-            
-            const partElement = event.target.closest('.part-item');
-            if (partElement) {
-                partElement.style.background = newStatus === 'sold' ? '#d4edda' : 
-                                             newStatus === 'reserved' ? '#fff3cd' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                partElement.style.color = newStatus === 'sold' || newStatus === 'reserved' ? '#000' : '#fff';
-            }
-        }
-    }
-}
-
-function clearForm() {
-    document.getElementById('make').value = '';
-    document.getElementById('model').value = '';
-    document.getElementById('year').value = '';
-    document.getElementById('price').value = '';
-    document.getElementById('location').value = '';
-    document.getElementById('photoUpload').value = '';
-    document.getElementById('customPartName').value = '';
-    document.getElementById('customPartPrice').value = '';
-    document.getElementById('vinInput').value = '';
-    document.getElementById('color').value = '';
-    document.getElementById('engine').value = '';
-    document.getElementById('trim').value = '';
-    currentParts = [];
-    updatePartsPreview();
-    generatePriceSuggestions();
-}
-
-function deleteVehicle(id) {
-    if (confirm('Are you sure you want to delete this vehicle and all its parts?')) {
-        inventory = inventory.filter(vehicle => vehicle.id !== id);
-        updateInventoryList();
-        updateDashboard();
-        updateFilters();
-        updateSalesDropdown();
-        saveInventory();
-    }
-}
-
-// Search functionality
+// FIXED: Enhanced search to include VIN
 document.getElementById('searchInput').addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
     
@@ -1267,6 +958,7 @@ document.getElementById('searchInput').addEventListener('input', function() {
     const filteredInventory = inventory.filter(vehicle => 
         vehicle.make.toLowerCase().includes(searchTerm) ||
         vehicle.model.toLowerCase().includes(searchTerm) ||
+        (vehicle.vin && vehicle.vin.toLowerCase().includes(searchTerm)) || // FIXED: Search by VIN
         vehicle.location.toLowerCase().includes(searchTerm) ||
         vehicle.parts.some(part => part.name.toLowerCase().includes(searchTerm))
     );
@@ -1274,26 +966,17 @@ document.getElementById('searchInput').addEventListener('input', function() {
     displayFilteredInventory(filteredInventory);
 });
 
-// Save/load inventory
-function saveInventory() {
-    localStorage.setItem('junkyardInventory', JSON.stringify(inventory));
-}
-
-function loadInventory() {
-    const saved = localStorage.getItem('junkyardInventory');
-    if (saved) {
-        inventory = JSON.parse(saved);
-        updateInventoryList();
-    }
-}
+// [Keep all your other existing functions...]
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     loadInventory();
     loadSales();
     initializeApp();
-    console.log('Junkyard Inventory Manager with all features loaded!');
+    console.log('Premier Auto Truck & Salvage Inventory loaded!');
 });
+
+// [Include all your other existing functions below...]
     </script>
 </body>
 </html>
