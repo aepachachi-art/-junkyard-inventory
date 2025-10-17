@@ -35,14 +35,9 @@
             padding: 15px 20px;
             background: #2a2a2a;
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #444;
-        }
-
-        .scanner-header h5 {
-            margin: 0;
-            flex-grow: 1;
         }
 
         .scanner-video-container {
@@ -77,7 +72,6 @@
             border: 2px solid #00ff00;
             border-radius: 10px;
             box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.7);
-            z-index: 1000;
         }
 
         .scanner-corner {
@@ -86,7 +80,6 @@
             height: 30px;
             border-color: #00ff00;
             border-style: solid;
-            border-width: 0;
         }
 
         .scanner-corner.top-left {
@@ -234,6 +227,36 @@
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
+        }
+
+        .debug-section {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .scanner-content {
+                width: 98%;
+                margin: 10px;
+            }
+            
+            .scanner-frame {
+                width: 90%;
+                height: 150px;
+            }
+            
+            .btn-group {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 5px;
+            }
+            
+            .btn-group .btn {
+                margin-bottom: 5px;
+            }
         }
     </style>
 </head>
@@ -470,21 +493,11 @@
             <h2 class="mb-4">Current Inventory</h2>
             <div class="mb-3">
                 <div class="row">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" id="searchInventory" placeholder="Search vehicles...">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search vehicles...">
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="filterMake">
-                            <option value="">All Makes</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select class="form-select" id="filterYear">
-                            <option value="">All Years</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">Clear Filters</button>
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-secondary w-100" onclick="clearSearch()">Clear Search</button>
                     </div>
                 </div>
             </div>
@@ -497,6 +510,18 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Debug Section -->
+        <div class="debug-section mt-4">
+            <h5>Debug Tools</h5>
+            <div class="btn-group mb-3">
+                <button class="btn btn-info btn-sm" onclick="showDebugInfo()">Show Debug Info</button>
+                <button class="btn btn-warning btn-sm" onclick="clearAllData()">Clear All Data</button>
+                <button class="btn btn-success btn-sm" onclick="testStorage()">Add Test Vehicle</button>
+                <button class="btn btn-primary btn-sm" onclick="quickTest()">Quick Phone Test</button>
+            </div>
+            <div id="debugInfo" class="p-2 bg-white rounded"></div>
         </div>
     </div>
 
@@ -532,15 +557,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Enhanced inventory system with all new features
+        // Enhanced inventory system with all features
         let inventory = [];
         let currentParts = [];
-        let currentAttachments = []; // NEW: File attachments
-        let salesHistory = JSON.parse(localStorage.getItem('junkyardSales')) || [];
+        let currentAttachments = [];
         let cameraStream = null;
         let scannedVIN = '';
         let barcodeDetector = null;
-        let partsDatabase = JSON.parse(localStorage.getItem('partsDatabase')) || {}; // NEW: Parts database
+        let partsDatabase = JSON.parse(localStorage.getItem('partsDatabase')) || {};
 
         // Initialize AI Barcode Detector if available
         if ('BarcodeDetector' in window) {
@@ -549,52 +573,16 @@
             });
         }
 
-        // NEW: Initialize parts database on app start
+        // Initialize parts database
         function initializePartsDatabase() {
             if (Object.keys(partsDatabase).length === 0) {
                 partsDatabase = {
-                    'ENGINE': {
-                        category: 'Powertrain',
-                        commonPrice: 500,
-                        compatibleMakes: ['ALL'],
-                        description: 'Complete engine assembly',
-                        files: []
-                    },
-                    'TRANSMISSION': {
-                        category: 'Powertrain', 
-                        commonPrice: 300,
-                        compatibleMakes: ['ALL'],
-                        description: 'Manual or automatic transmission',
-                        files: []
-                    },
-                    'BATTERY': {
-                        category: 'Electrical',
-                        commonPrice: 80,
-                        compatibleMakes: ['ALL'],
-                        description: '12V automotive battery',
-                        files: []
-                    },
-                    'ALTERNATOR': {
-                        category: 'Electrical',
-                        commonPrice: 120,
-                        compatibleMakes: ['ALL'],
-                        description: 'Charging system alternator',
-                        files: []
-                    },
-                    'WHEELS': {
-                        category: 'Suspension',
-                        commonPrice: 50,
-                        compatibleMakes: ['ALL'],
-                        description: 'Set of 4 wheels',
-                        files: []
-                    },
-                    'DOORS': {
-                        category: 'Body',
-                        commonPrice: 100,
-                        compatibleMakes: ['ALL'],
-                        description: 'Complete door assembly',
-                        files: []
-                    }
+                    'ENGINE': { category: 'Powertrain', commonPrice: 500, compatibleMakes: ['ALL'], description: 'Complete engine assembly' },
+                    'TRANSMISSION': { category: 'Powertrain', commonPrice: 300, compatibleMakes: ['ALL'], description: 'Manual or automatic transmission' },
+                    'BATTERY': { category: 'Electrical', commonPrice: 80, compatibleMakes: ['ALL'], description: '12V automotive battery' },
+                    'ALTERNATOR': { category: 'Electrical', commonPrice: 120, compatibleMakes: ['ALL'], description: 'Charging system alternator' },
+                    'WHEELS': { category: 'Suspension', commonPrice: 50, compatibleMakes: ['ALL'], description: 'Set of 4 wheels' },
+                    'DOORS': { category: 'Body', commonPrice: 100, compatibleMakes: ['ALL'], description: 'Complete door assembly' }
                 };
                 savePartsDatabase();
             }
@@ -604,12 +592,11 @@
             localStorage.setItem('partsDatabase', JSON.stringify(partsDatabase));
         }
 
-        // ENHANCED: Full Screen Scanner Functions with Professional UI
+        // Enhanced VIN Scanner
         function openFullScreenScanner() {
             const scanner = document.getElementById('fullScreenScanner');
             scanner.style.display = 'flex';
             
-            // Add scanner overlay effects
             const scannerOverlay = document.getElementById('scannerOverlay');
             if (scannerOverlay) {
                 scannerOverlay.innerHTML = `
@@ -624,14 +611,12 @@
                 `;
             }
             
-            // Access camera with better settings
             if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 const constraints = {
                     video: { 
                         facingMode: 'environment',
                         width: { ideal: 1920 },
-                        height: { ideal: 1080 },
-                        focusMode: 'continuous'
+                        height: { ideal: 1080 }
                     },
                     audio: false
                 };
@@ -644,7 +629,6 @@
                     
                     video.onloadedmetadata = function() {
                         video.play();
-                        // Start enhanced AI detection
                         startEnhancedBarcodeDetection(video);
                     };
                 })
@@ -657,7 +641,6 @@
             }
         }
 
-        // ENHANCED: AI Barcode Detection with better feedback
         function startEnhancedBarcodeDetection(video) {
             if (!barcodeDetector) {
                 startFallbackDetection(video);
@@ -683,11 +666,8 @@
                                 const barcode = barcodes[0];
                                 const rawValue = barcode.rawValue.toUpperCase().trim();
                                 
-                                // Enhanced VIN validation
                                 if (isValidVIN(rawValue)) {
                                     handleSuccessfulScan(rawValue, barcode);
-                                } else {
-                                    showScanFeedback('Invalid VIN format detected', 'warning');
                                 }
                             }
                         })
@@ -701,12 +681,10 @@
             detectBarcode();
         }
 
-        // NEW: Enhanced VIN validation
         function isValidVIN(vin) {
             return vin.length === 17 && !/[IOQ]/.test(vin) && /^[A-HJ-NPR-Z0-9]{17}$/.test(vin);
         }
 
-        // NEW: Handle successful scan
         function handleSuccessfulScan(vin, barcode) {
             scannedVIN = vin;
             const scannedVINElement = document.getElementById('scannedVIN');
@@ -714,18 +692,15 @@
                 scannedVINElement.innerHTML = `
                     <i class="fas fa-check-circle"></i>
                     <strong>VIN Detected:</strong> ${vin}
-                    <br><small>Bounding Box: ${JSON.stringify(barcode.boundingBox)}</small>
                 `;
                 scannedVINElement.className = 'scan-result success';
             }
             
-            // Auto-capture after successful scan
             setTimeout(() => {
                 captureVINFromScanner();
             }, 1000);
         }
 
-        // NEW: Update detection status
         function updateDetectionStatus(count) {
             const statusEl = document.getElementById('detectionStatus');
             if (statusEl) {
@@ -733,34 +708,17 @@
             }
         }
 
-        // NEW: Show scan feedback
-        function showScanFeedback(message, type) {
-            const feedbackEl = document.getElementById('scanFeedback');
-            if (feedbackEl) {
-                feedbackEl.textContent = message;
-                feedbackEl.className = `scan-feedback ${type}`;
-                setTimeout(() => {
-                    feedbackEl.textContent = '';
-                    feedbackEl.className = 'scan-feedback';
-                }, 3000);
-            }
-        }
-
-        // NEW: Show scanner error
         function showScannerError(message) {
             alert('Cannot access camera: ' + message);
             closeFullScreenScanner();
         }
 
-        // Fallback detection (your existing simulateBarcodeScanning)
         function startFallbackDetection(video) {
             setTimeout(() => {
                 const demoVINs = [
-                    '1N4AL3AP3DN534388', // Your test VIN
+                    '1N4AL3AP3DN534388',
                     '1HGBH41JXMN109186',
-                    '2FMDK3GC5DBA12345', 
-                    '1G1JC5240X7252365',
-                    '5YJSA1CN5DFP12345'
+                    '2FMDK3GC5DBA12345'
                 ];
                 
                 const randomVIN = demoVINs[Math.floor(Math.random() * demoVINs.length)];
@@ -769,8 +727,7 @@
                 const scannedVINElement = document.getElementById('scannedVIN');
                 if (scannedVINElement) {
                     scannedVINElement.textContent = `Scanned VIN: ${randomVIN}`;
-                    scannedVINElement.style.background = '#d4edda';
-                    scannedVINElement.style.borderLeftColor = '#28a745';
+                    scannedVINElement.className = 'scan-result success';
                 }
             }, 3000);
         }
@@ -786,13 +743,11 @@
                 cameraStream = null;
             }
             
-            // Clear any scanned VIN
             scannedVIN = '';
             const scannedVINElement = document.getElementById('scannedVIN');
             if (scannedVINElement) {
                 scannedVINElement.textContent = 'Point camera at VIN barcode...';
-                scannedVINElement.style.background = '#f8f9fa';
-                scannedVINElement.style.borderLeftColor = '#28a745';
+                scannedVINElement.className = 'scan-result';
             }
         }
 
@@ -806,210 +761,7 @@
             }
         }
 
-        // NEW: Parts Database Integration
-        function pullPartsFromDatabase(vehicleMake, vehicleModel, vehicleYear) {
-            const compatibleParts = [];
-            
-            Object.keys(partsDatabase).forEach(partName => {
-                const part = partsDatabase[partName];
-                if (part.compatibleMakes.includes('ALL') || 
-                    part.compatibleMakes.includes(vehicleMake.toUpperCase())) {
-                    
-                    compatibleParts.push({
-                        name: partName,
-                        price: part.commonPrice,
-                        category: part.category,
-                        description: part.description,
-                        source: 'database'
-                    });
-                }
-            });
-            
-            return compatibleParts;
-        }
-
-        // ENHANCED: Auto-generate parts with database integration
-        function autoGenerateParts(vehicleType, vehicleMake = '', vehicleModel = '') {
-            currentParts = [];
-            
-            // Pull from database first
-            if (vehicleMake) {
-                const dbParts = pullPartsFromDatabase(vehicleMake, vehicleModel, '');
-                dbParts.forEach(part => {
-                    currentParts.push({
-                        id: Date.now() + Math.random(),
-                        name: part.name,
-                        price: part.price,
-                        condition: 'good',
-                        status: 'available',
-                        category: part.category,
-                        description: part.description,
-                        source: 'database'
-                    });
-                });
-            }
-            
-            // Add essential parts if not already included
-            const essentialParts = ['engine', 'transmission', 'battery', 'alternator', 'wheels'];
-            essentialParts.forEach(partName => {
-                if (!currentParts.some(part => part.name.toLowerCase() === partName.toLowerCase())) {
-                    addCommonPart(partName);
-                }
-            });
-            
-            // Add vehicle-type specific parts
-            if (vehicleType.includes('TRUCK') || vehicleType.includes('PICKUP')) {
-                addCommonPart('tailgate');
-                addCommonPart('bedliner');
-            } else if (vehicleType.includes('SUV') || vehicleType.includes('VAN')) {
-                addCommonPart('seats');
-                addCommonPart('rearhatch');
-            } else {
-                addCommonPart('doors');
-                addCommonPart('hood');
-            }
-            
-            updatePartsPreview();
-            generatePriceSuggestions();
-        }
-
-        // NEW: File attachment system
-        function handleFileAttachments(files) {
-            Array.from(files).forEach(file => {
-                if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                    alert('File too large: ' + file.name);
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const attachment = {
-                        id: Date.now() + Math.random(),
-                        name: file.name,
-                        type: file.type,
-                        size: file.size,
-                        data: e.target.result,
-                        uploadDate: new Date().toISOString()
-                    };
-                    
-                    currentAttachments.push(attachment);
-                    updateAttachmentsPreview();
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function updateAttachmentsPreview() {
-            const preview = document.getElementById('attachmentsPreview');
-            if (!preview) return;
-            
-            if (currentAttachments.length === 0) {
-                preview.innerHTML = '<small class="text-muted">No files attached</small>';
-                return;
-            }
-            
-            preview.innerHTML = currentAttachments.map(attachment => `
-                <div class="attachment-item">
-                    <i class="fas fa-file"></i>
-                    ${attachment.name} (${formatFileSize(attachment.size)})
-                    <button class="btn-close btn-close-sm" onclick="removeAttachment(${attachment.id})"></button>
-                </div>
-            `).join('');
-        }
-
-        function removeAttachment(attachmentId) {
-            currentAttachments = currentAttachments.filter(att => att.id !== attachmentId);
-            updateAttachmentsPreview();
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        // ENHANCED: Add vehicle with attachments
-        function addVehicle() {
-            const make = document.getElementById('make').value;
-            const model = document.getElementById('model').value;
-            const year = document.getElementById('year').value;
-            const price = document.getElementById('price').value;
-            const location = document.getElementById('location').value;
-            const vin = document.getElementById('vinInput').value;
-            const color = document.getElementById('color').value;
-            const engine = document.getElementById('engine').value;
-            const trim = document.getElementById('trim').value;
-            const photoFile = document.getElementById('photoUpload').files[0];
-
-            if (!vin) {
-                alert('Please enter a VIN number!');
-                return;
-            }
-
-            if (make && model && year && price) {
-                const photoPromise = photoFile ? readFileAsDataURL(photoFile) : Promise.resolve(null);
-                
-                photoPromise.then(photoData => {
-                    const newVehicle = {
-                        id: Date.now(),
-                        vin: vin,
-                        make: make,
-                        model: model,
-                        year: parseInt(year),
-                        price: parseFloat(price),
-                        location: location || 'Not set',
-                        color: color,
-                        engine: engine,
-                        trim: trim,
-                        parts: [...currentParts],
-                        attachments: [...currentAttachments], // NEW: Include attachments
-                        photo: photoData,
-                        dateAdded: new Date().toLocaleDateString()
-                    };
-
-                    inventory.push(newVehicle);
-                    updateInventoryList();
-                    updateDashboard();
-                    updateFilters();
-                    clearForm();
-                    saveInventory();
-                    
-                    alert(`✅ Vehicle added successfully!\nVIN: ${vin}\nParts: ${currentParts.length}\nFiles: ${currentAttachments.length}`);
-                });
-            } else {
-                alert('Please fill all required fields (Make, Model, Year, Price, and VIN)!');
-            }
-        }
-
-        // ENHANCED: Clear form with attachments
-        function clearForm() {
-            document.getElementById('make').value = '';
-            document.getElementById('model').value = '';
-            document.getElementById('year').value = '';
-            document.getElementById('price').value = '';
-            document.getElementById('location').value = '';
-            document.getElementById('photoUpload').value = '';
-            document.getElementById('customPartName').value = '';
-            document.getElementById('customPartPrice').value = '';
-            document.getElementById('vinInput').value = '';
-            document.getElementById('color').value = '';
-            document.getElementById('engine').value = '';
-            document.getElementById('trim').value = '';
-            
-            // NEW: Clear attachments
-            const fileInput = document.getElementById('fileAttachments');
-            if (fileInput) fileInput.value = '';
-            currentAttachments = [];
-            updateAttachmentsPreview();
-            
-            currentParts = [];
-            updatePartsPreview();
-            generatePriceSuggestions();
-        }
-
-        // COMPLETE VIN DECODING SYSTEM
+        // VIN Lookup Function
         function lookupVIN() {
             const vin = document.getElementById('vinInput').value.toUpperCase().trim();
             
@@ -1023,16 +775,13 @@
                 return;
             }
             
-            if (/[IOQ]/.test(vin)) {
-                alert('Invalid VIN: Cannot contain letters I, O, or Q');
-                return;
-            }
+            const lookupBtn = event?.target || document.querySelector('button[onclick*="lookupVIN"]');
+            const originalText = lookupBtn?.innerHTML || 'Lookup VIN';
             
-            // Show loading state
-            const lookupBtn = event.target;
-            const originalText = lookupBtn.innerHTML;
-            lookupBtn.innerHTML = '⏳ Looking up...';
-            lookupBtn.disabled = true;
+            if (lookupBtn) {
+                lookupBtn.innerHTML = '⏳ Looking up...';
+                lookupBtn.disabled = true;
+            }
             
             setTimeout(() => {
                 const vehicleData = decodeVIN(vin);
@@ -1048,50 +797,53 @@
                     autoGenerateParts(vehicleData.type, vehicleData.make, vehicleData.model);
                     generatePriceSuggestions();
                     
-                    alert(`✅ Vehicle data loaded!\n${vehicleData.year} ${vehicleData.make} ${vehicleData.model}\n${vehicleData.trim} • ${vehicleData.engine}`);
+                    alert(`✅ Vehicle data loaded!\n${vehicleData.year} ${vehicleData.make} ${vehicleData.model}`);
                 } else {
-                    alert('❌ Unable to decode VIN. Please check the VIN and try again, or enter vehicle details manually.');
+                    alert('❌ Unable to decode VIN. Please enter vehicle details manually.');
                 }
                 
-                // Restore button
-                lookupBtn.innerHTML = originalText;
-                lookupBtn.disabled = false;
+                if (lookupBtn) {
+                    lookupBtn.innerHTML = originalText;
+                    lookupBtn.disabled = false;
+                }
             }, 1500);
         }
 
-        // MAIN VIN DECODER
+        // Simplified VIN Decoder
         function decodeVIN(vin) {
             try {
-                const wmi = vin.substring(0, 3);
-                let vehicleData = null;
+                const yearChar = vin.charAt(9);
+                const year = getYearFromVIN(yearChar);
                 
-                // US Manufacturers
-                if (wmi.startsWith('1') || wmi.startsWith('4') || wmi.startsWith('5')) {
-                    vehicleData = decodeUSVIN(vin, wmi);
-                }
-                // Japanese Manufacturers
-                else if (wmi.startsWith('J')) {
-                    vehicleData = decodeJapaneseVIN(vin, wmi);
-                }
-                // German Manufacturers
-                else if (wmi.startsWith('W')) {
-                    vehicleData = decodeGermanVIN(vin, wmi);
-                }
-                // Korean Manufacturers
-                else if (wmi.startsWith('K') || wmi.startsWith('M') || wmi.startsWith('S')) {
-                    vehicleData = decodeKoreanVIN(vin, wmi);
-                }
-                // Nissan VINs
-                else if (wmi.startsWith('1N')) {
-                    vehicleData = decodeNissanVIN(vin, wmi);
-                }
+                const firstChar = vin.charAt(0);
+                const makes = {
+                    '1': 'FORD', '2': 'FORD', '3': 'FORD', 
+                    '4': 'MAZDA', '5': 'HONDA', 'J': 'TOYOTA',
+                    'K': 'HYUNDAI', 'W': 'VOLKSWAGEN'
+                };
                 
-                if (!vehicleData) {
-                    vehicleData = decodeGenericVIN(vin);
-                }
+                const make = makes[firstChar] || 'UNKNOWN MAKE';
+                const models = {
+                    'FORD': ['F-150', 'EXPLORER', 'FOCUS', 'MUSTANG'],
+                    'HONDA': ['CIVIC', 'ACCORD', 'CR-V', 'PILOT'],
+                    'TOYOTA': ['CAMRY', 'COROLLA', 'RAV4', 'TACOMA'],
+                    'HYUNDAI': ['ELANTRA', 'SONATA', 'TUCSON', 'SANTA FE'],
+                    'VOLKSWAGEN': ['JETTA', 'PASSAT', 'TIGUAN', 'ATLAS']
+                };
                 
-                vehicleData.vin = vin;
-                return vehicleData;
+                const modelList = models[make] || ['MODEL'];
+                const modelIndex = vin.charCodeAt(1) % modelList.length;
+                const model = modelList[modelIndex];
+                
+                return {
+                    make: make,
+                    model: model,
+                    year: year,
+                    color: getRandomColor(),
+                    engine: getRandomEngine(),
+                    trim: getRandomTrim(),
+                    type: 'CAR'
+                };
                 
             } catch (error) {
                 console.error('VIN decoding error:', error);
@@ -1099,320 +851,32 @@
             }
         }
 
-        // NISSAN VIN DECODER - FIXED FOR 1N4AL3AP3DN534388
-        function decodeNissanVIN(vin, wmi) {
-            const nissanModels = {
-                '1N4': {
-                    'A': { model: 'ALTIMA', type: 'CAR' },
-                    'B': { model: 'SENTRA', type: 'CAR' },
-                    'C': { model: 'VERSA', type: 'CAR' },
-                    'D': { model: 'MAXIMA', type: 'CAR' },
-                    'T': { model: 'PATHFINDER', type: 'SUV' },
-                    'X': { model: 'MURANO', type: 'SUV' },
-                    'Z': { model: 'FRONTIER', type: 'TRUCK' }
-                },
-                '1N6': {
-                    'D': { model: 'TITAN', type: 'TRUCK' },
-                    'T': { model: 'ARMADA', type: 'SUV' }
-                }
-            };
-            
-            const yearChar = vin.charAt(9);
-            const year = getYearFromVIN(yearChar);
-            
-            // Get model code (4th character)
-            const modelCode = vin.charAt(3);
-            const makeData = nissanModels[wmi];
-            
-            let model = 'ALTIMA'; // Default for your VIN
-            let type = 'CAR';
-            
-            if (makeData && makeData[modelCode]) {
-                model = makeData[modelCode].model;
-                type = makeData[modelCode].type;
-            }
-            
-            // Engine decoding for Nissan (6th character)
-            const engineChar = vin.charAt(5);
-            const nissanEngines = {
-                'A': '2.5L I4', 'B': '3.5L V6', 'C': '2.0L I4',
-                'D': '4.0L V6', 'E': '5.6L V8', 'F': '1.8L I4',
-                'L': '2.5L I4', 'P': '3.5L V6'
-            };
-            
-            return {
-                make: 'NISSAN',
-                model: model,
-                year: year,
-                color: getRandomColor(),
-                engine: nissanEngines[engineChar] || '2.5L I4',
-                trim: getNissanTrim(vin),
-                type: type
-            };
-        }
-
-        function getNissanTrim(vin) {
-            const trimChar = vin.charAt(4);
-            const trims = {
-                'A': 'S', 'B': 'SV', 'C': 'SL', 'D': 'SR',
-                'E': 'PLATINUM', 'F': 'PRO-4X', 'L': 'LE'
-            };
-            return trims[trimChar] || 'BASE';
-        }
-
-        // US VIN DECODER
-        function decodeUSVIN(vin, wmi) {
-            const makes = {
-                '1FA': 'FORD', '1FB': 'FORD', '1FC': 'FORD', '1FD': 'FORD', 
-                '1FM': 'FORD', '1FT': 'FORD', '1FU': 'FREIGHTLINER', 
-                '1FV': 'FREIGHTLINER', '1GC': 'CHEVROLET', '1GT': 'GMC',
-                '1G1': 'CHEVROLET', '1G2': 'PONTIAC', '1G3': 'OLDSMOBILE', 
-                '1G4': 'BUICK', '1G6': 'CADILLAC', '1GM': 'GMC', 
-                '2FM': 'FORD', '2FT': 'FORD', '2FU': 'FREIGHTLINER', 
-                '2FV': 'FREIGHTLINER', '2GC': 'CHEVROLET', '2GT': 'GMC',
-                '3FA': 'FORD', '3FC': 'FORD', '3FD': 'FORD', '3FE': 'FORD',
-                '3G1': 'CHEVROLET', '3GC': 'CHEVROLET', '3GT': 'GMC', 
-                '4F2': 'MAZDA', '4S6': 'HONDA', '4T1': 'TOYOTA', 
-                '4T3': 'TOYOTA', '5FN': 'HONDA', '5FR': 'HONDA', 
-                '5TD': 'TOYOTA', '5TE': 'TOYOTA', '5TF': 'TOYOTA', 
-                '5Y2': 'TOYOTA', '1N4': 'NISSAN', '1N6': 'NISSAN'
-            };
-            
-            const make = makes[wmi] || 'US VEHICLE';
-            
-            if (make === 'NISSAN') {
-                return decodeNissanVIN(vin, wmi);
-            }
-            
-            const yearChar = vin.charAt(9);
-            const year = getYearFromVIN(yearChar);
-            
-            const engineChar = vin.charAt(7);
-            const engines = {
-                'A': '2.0L I4', 'B': '2.3L I4', 'C': '2.5L I4', 'D': '3.0L V6',
-                'E': '3.5L V6', 'F': '4.0L V6', 'G': '4.6L V8', 'H': '5.0L V8',
-                'J': '5.4L V8', 'K': '5.7L V8', 'L': '6.0L V8', 'M': '6.2L V8'
-            };
-            
-            let type = 'CAR';
-            if (wmi.includes('1F') && ['D','T','U','V'].includes(wmi.charAt(2))) type = 'TRUCK';
-            if (wmi.includes('1G') && ['C','T'].includes(wmi.charAt(2))) type = 'TRUCK';
-            if (vin.includes('M') || vin.includes('S')) type = 'SUV';
-            
-            return {
-                make: make,
-                model: getModelFromMake(make, type),
-                year: year,
-                color: getRandomColor(),
-                engine: engines[engineChar] || '3.5L V6',
-                trim: getRandomTrim(),
-                type: type
-            };
-        }
-
-        // JAPANESE VIN DECODER
-        function decodeJapaneseVIN(vin, wmi) {
-            const makes = {
-                'JHL': 'HONDA', 'JH4': 'ACURA', 'JHM': 'HONDA',
-                'JT1': 'TOYOTA', 'JT2': 'TOYOTA', 'JT3': 'TOYOTA',
-                'JT4': 'TOYOTA', 'JT5': 'TOYOTA', 'JT6': 'TOYOTA',
-                'JT8': 'LEXUS', 'JTD': 'TOYOTA', 'JTE': 'TOYOTA',
-                'JTH': 'LEXUS', 'JTJ': 'LEXUS', 'JTK': 'TOYOTA',
-                'JTL': 'TOYOTA', 'JTM': 'TOYOTA', 'JTN': 'TOYOTA',
-                'JN1': 'NISSAN', 'JN6': 'NISSAN', 'JN8': 'NISSAN'
-            };
-            
-            const make = makes[wmi] || 'JAPANESE VEHICLE';
-            
-            if (make === 'NISSAN') {
-                return decodeNissanVIN(vin, wmi);
-            }
-            
-            const yearChar = vin.charAt(9);
-            const year = getYearFromVIN(yearChar);
-            
-            let type = 'CAR';
-            if (vin.includes('G') || vin.includes('K')) type = 'SUV';
-            if (vin.includes('T') || vin.includes('U')) type = 'TRUCK';
-            
-            return {
-                make: make,
-                model: getModelFromMake(make, type),
-                year: year,
-                color: getRandomColor(),
-                engine: getJapaneseEngine(make),
-                trim: getRandomTrim(),
-                type: type
-            };
-        }
-
-        // GERMAN VIN DECODER
-        function decodeGermanVIN(vin, wmi) {
-            const makes = {
-                'WDB': 'MERCEDES-BENZ', 'WDC': 'MERCEDES-BENZ', 'WDD': 'MERCEDES-BENZ',
-                'WMX': 'MERCEDES-BENZ', 'WBA': 'BMW', 'WBS': 'BMW', 'WBX': 'BMW',
-                'WVW': 'VOLKSWAGEN', 'WV1': 'VOLKSWAGEN', 'WV2': 'VOLKSWAGEN',
-                'WV3': 'VOLKSWAGEN', 'WAU': 'AUDI', 'WA1': 'AUDI', 'TRU': 'AUDI'
-            };
-            
-            const make = makes[wmi] || 'GERMAN VEHICLE';
-            const yearChar = vin.charAt(9);
-            const year = getYearFromVIN(yearChar);
-            
-            let type = 'CAR';
-            if (vin.includes('V') || vin.includes('X')) type = 'SUV';
-            
-            return {
-                make: make,
-                model: getModelFromMake(make, type),
-                year: year,
-                color: getRandomColor(),
-                engine: getGermanEngine(make),
-                trim: getRandomTrim(),
-                type: type
-            };
-        }
-
-        // KOREAN VIN DECODER
-        function decodeKoreanVIN(vin, wmi) {
-            const makes = {
-                'KNA': 'KIA', 'KNB': 'KIA', 'KNC': 'KIA', 'KND': 'KIA',
-                'KNE': 'KIA', 'KNF': 'KIA', 'KMH': 'HYUNDAI', 'KM8': 'HYUNDAI',
-                'KMT': 'HYUNDAI', 'KMX': 'HYUNDAI'
-            };
-            
-            const make = makes[wmi] || 'KOREAN VEHICLE';
-            const yearChar = vin.charAt(9);
-            const year = getYearFromVIN(yearChar);
-            
-            let type = 'CAR';
-            if (vin.includes('M') || vin.includes('S')) type = 'SUV';
-            
-            return {
-                make: make,
-                model: getModelFromMake(make, type),
-                year: year,
-                color: getRandomColor(),
-                engine: '2.4L I4',
-                trim: getRandomTrim(),
-                type: type
-            };
-        }
-
-        // GENERIC VIN DECODER
-        function decodeGenericVIN(vin) {
-            const yearChar = vin.charAt(9);
-            const year = getYearFromVIN(yearChar);
-            
-            const firstChar = vin.charAt(0);
-            const regionMakes = {
-                '1': 'FORD', '2': 'FORD', '3': 'FORD', '4': 'MAZDA', '5': 'HONDA',
-                'J': 'TOYOTA', 'K': 'HYUNDAI', 'L': 'LINCOLN', 'S': 'SUBARU',
-                'V': 'VOLVO', 'W': 'VOLKSWAGEN', 'Y': 'VOLVO', 'Z': 'MAZDA'
-            };
-            
-            const make = regionMakes[firstChar] || 'UNKNOWN MAKE';
-            let type = 'CAR';
-            if (vin.includes('T') || vin.includes('U')) type = 'TRUCK';
-            
-            return {
-                make: make,
-                model: getModelFromMake(make, type),
-                year: year,
-                color: getRandomColor(),
-                engine: '2.0L I4',
-                trim: getRandomTrim(),
-                type: type
-            };
-        }
-
-        // HELPER FUNCTIONS
         function getYearFromVIN(yearChar) {
             const yearMap = {
                 'A': 2010, 'B': 2011, 'C': 2012, 'D': 2013, 'E': 2014, 'F': 2015,
                 'G': 2016, 'H': 2017, 'J': 2018, 'K': 2019, 'L': 2020, 'M': 2021,
-                'N': 2022, 'P': 2023, 'R': 2024, 'S': 2025, 'T': 2026, 'V': 2027,
-                'W': 2028, 'X': 2029, 'Y': 2030,
-                '1': 2001, '2': 2002, '3': 2003, '4': 2004, '5': 2005, '6': 2006,
-                '7': 2007, '8': 2008, '9': 2009
+                'N': 2022, 'P': 2023, 'R': 2024, '1': 2001, '2': 2002, '3': 2003,
+                '4': 2004, '5': 2005, '6': 2006, '7': 2007, '8': 2008, '9': 2009
             };
             return yearMap[yearChar] || 2020;
         }
 
-        function getModelFromMake(make, type) {
-            const models = {
-                'NISSAN': {
-                    'CAR': ['ALTIMA', 'SENTRA', 'VERSA', 'MAXIMA', 'LEAF'],
-                    'TRUCK': ['FRONTIER', 'TITAN'],
-                    'SUV': ['ROGUE', 'MURANO', 'PATHFINDER', 'ARMADA', 'KICKS']
-                },
-                'FORD': {
-                    'CAR': ['FOCUS', 'FUSION', 'TAURUS', 'MUSTANG'],
-                    'TRUCK': ['F-150', 'RANGER', 'SUPER DUTY'],
-                    'SUV': ['ESCAPE', 'EXPLORER', 'EXPEDITION', 'EDGE']
-                },
-                'CHEVROLET': {
-                    'CAR': ['MALIBU', 'IMPALA', 'CAMARO', 'CORVETTE'],
-                    'TRUCK': ['SILVERADO', 'COLORADO'],
-                    'SUV': ['EQUINOX', 'TRAVERSE', 'TAHOE', 'SUBURBAN']
-                },
-                'TOYOTA': {
-                    'CAR': ['CAMRY', 'COROLLA', 'AVALON', 'PRIUS'],
-                    'TRUCK': ['TACOMA', 'TUNDRA'],
-                    'SUV': ['RAV4', 'HIGHLANDER', '4RUNNER', 'SEQUOIA']
-                },
-                'HONDA': {
-                    'CAR': ['CIVIC', 'ACCORD', 'INSIGHT'],
-                    'SUV': ['CR-V', 'PILOT', 'HR-V', 'PASSPORT']
-                }
-            };
-            
-            const makeModels = models[make];
-            if (makeModels && makeModels[type]) {
-                const availableModels = makeModels[type];
-                return availableModels[Math.floor(Math.random() * availableModels.length)];
-            }
-            
-            const fallbacks = {
-                'CAR': ['SEDAN', 'COUPE', 'HATCHBACK'],
-                'TRUCK': ['PICKUP', 'TRUCK'],
-                'SUV': ['SUV', 'CROSSOVER']
-            };
-            
-            return fallbacks[type] ? fallbacks[type][0] : 'MODEL';
-        }
-
-        function getJapaneseEngine(make) {
-            const engines = {
-                'HONDA': ['1.5L I4', '2.0L I4', '2.4L I4'],
-                'TOYOTA': ['2.5L I4', '3.5L V6', '2.0L I4 HYBRID'],
-                'NISSAN': ['2.5L I4', '3.5L V6', '2.0L I4', '1.8L I4', '5.6L V8'],
-                'LEXUS': ['2.5L I4', '3.5L V6', '5.0L V8']
-            };
-            return engines[make] ? engines[make][Math.floor(Math.random() * engines[make].length)] : '2.0L I4';
-        }
-
-        function getGermanEngine(make) {
-            const engines = {
-                'BMW': ['2.0L I4', '3.0L I6', '4.4L V8'],
-                'MERCEDES-BENZ': ['2.0L I4', '3.0L V6', '4.0L V8'],
-                'AUDI': ['2.0L I4', '3.0L V6'],
-                'VOLKSWAGEN': ['1.8L I4', '2.0L I4']
-            };
-            return engines[make] ? engines[make][Math.floor(Math.random() * engines[make].length)] : '2.0L I4';
-        }
-
         function getRandomColor() {
-            const colors = ['Black', 'White', 'Silver', 'Gray', 'Red', 'Blue', 'Green', 'Brown'];
+            const colors = ['Black', 'White', 'Silver', 'Gray', 'Red', 'Blue'];
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
+        function getRandomEngine() {
+            const engines = ['2.0L I4', '2.5L I4', '3.5L V6', '5.0L V8'];
+            return engines[Math.floor(Math.random() * engines.length)];
+        }
+
         function getRandomTrim() {
-            const trims = ['Base', 'LX', 'EX', 'Touring', 'Sport', 'Limited', 'Platinum'];
+            const trims = ['Base', 'LX', 'EX', 'Touring', 'Sport'];
             return trims[Math.floor(Math.random() * trims.length)];
         }
 
-        // EXISTING FUNCTIONS
+        // Parts Management
         function addCommonPart(partName) {
             const prices = {
                 'engine': 500, 'transmission': 300, 'doors': 100, 'wheels': 50, 
@@ -1423,7 +887,7 @@
             const newPart = {
                 id: Date.now() + Math.random(),
                 name: partName,
-                price: prices[partName],
+                price: prices[partName] || 100,
                 condition: 'good',
                 status: 'available'
             };
@@ -1482,15 +946,275 @@
 
         function generatePriceSuggestions() {
             const totalPartsValue = currentParts.reduce((sum, part) => sum + part.price, 0);
-            const suggestedVehiclePrice = totalPartsValue * 1.5; // 50% markup
+            const suggestedVehiclePrice = totalPartsValue * 1.5;
             
-            document.getElementById('priceSuggestions').innerHTML = 
-                `Total parts value: $${totalPartsValue} | Suggested vehicle price: $${suggestedVehiclePrice.toFixed(2)}`;
-            
-            // Auto-fill price field if empty
-            if (!document.getElementById('price').value && suggestedVehiclePrice > 0) {
-                document.getElementById('price').value = suggestedVehiclePrice.toFixed(2);
+            const suggestionsElement = document.getElementById('priceSuggestions');
+            if (suggestionsElement) {
+                suggestionsElement.innerHTML = 
+                    `Total parts value: $${totalPartsValue} | Suggested vehicle price: $${suggestedVehiclePrice.toFixed(2)}`;
             }
+            
+            const priceField = document.getElementById('price');
+            if (priceField && !priceField.value && suggestedVehiclePrice > 0) {
+                priceField.value = suggestedVehiclePrice.toFixed(2);
+            }
+        }
+
+        function autoGenerateParts(vehicleType, vehicleMake = '', vehicleModel = '') {
+            currentParts = [];
+            
+            addCommonPart('engine');
+            addCommonPart('transmission');
+            addCommonPart('battery');
+            addCommonPart('alternator');
+            addCommonPart('wheels');
+            
+            if (vehicleType.includes('TRUCK') || vehicleType.includes('PICKUP')) {
+                addCommonPart('tailgate');
+                addCommonPart('bedliner');
+            } else if (vehicleType.includes('SUV') || vehicleType.includes('VAN')) {
+                addCommonPart('seats');
+                addCommonPart('rearhatch');
+            } else {
+                addCommonPart('doors');
+                addCommonPart('hood');
+            }
+            
+            updatePartsPreview();
+            generatePriceSuggestions();
+        }
+
+        // File Attachments
+        function handleFileAttachments(files) {
+            Array.from(files).forEach(file => {
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File too large: ' + file.name);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const attachment = {
+                        id: Date.now() + Math.random(),
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        data: e.target.result,
+                        uploadDate: new Date().toISOString()
+                    };
+                    
+                    currentAttachments.push(attachment);
+                    updateAttachmentsPreview();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateAttachmentsPreview() {
+            const preview = document.getElementById('attachmentsPreview');
+            if (!preview) return;
+            
+            if (currentAttachments.length === 0) {
+                preview.innerHTML = '<small class="text-muted">No files attached</small>';
+                return;
+            }
+            
+            preview.innerHTML = currentAttachments.map(attachment => `
+                <div class="attachment-item">
+                    <i class="fas fa-file"></i>
+                    ${attachment.name} (${formatFileSize(attachment.size)})
+                    <button class="btn-close btn-close-sm" onclick="removeAttachment(${attachment.id})"></button>
+                </div>
+            `).join('');
+        }
+
+        function removeAttachment(attachmentId) {
+            currentAttachments = currentAttachments.filter(att => att.id !== attachmentId);
+            updateAttachmentsPreview();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Main Vehicle Functions
+        function addVehicle() {
+            const make = document.getElementById('make').value;
+            const model = document.getElementById('model').value;
+            const year = document.getElementById('year').value;
+            const price = document.getElementById('price').value;
+            const location = document.getElementById('location').value;
+            const vin = document.getElementById('vinInput').value;
+            const color = document.getElementById('color').value;
+            const engine = document.getElementById('engine').value;
+            const trim = document.getElementById('trim').value;
+            const photoFile = document.getElementById('photoUpload').files[0];
+
+            console.log('Adding vehicle:', {make, model, year, price, vin});
+
+            if (!vin) {
+                alert('Please enter a VIN number!');
+                return;
+            }
+
+            if (make && model && year && price) {
+                const photoPromise = photoFile ? readFileAsDataURL(photoFile) : Promise.resolve(null);
+                
+                photoPromise.then(photoData => {
+                    const newVehicle = {
+                        id: Date.now(),
+                        vin: vin,
+                        make: make,
+                        model: model,
+                        year: parseInt(year),
+                        price: parseFloat(price),
+                        location: location || 'Not set',
+                        color: color,
+                        engine: engine,
+                        trim: trim,
+                        parts: [...currentParts],
+                        attachments: [...currentAttachments],
+                        photo: photoData,
+                        dateAdded: new Date().toLocaleDateString()
+                    };
+
+                    console.log('New vehicle object:', newVehicle);
+                    
+                    inventory.push(newVehicle);
+                    
+                    const saved = saveInventory();
+                    if (saved) {
+                        updateInventoryList();
+                        updateDashboard();
+                        clearForm();
+                        alert(`✅ Vehicle added successfully!\nVIN: ${vin}\nParts: ${currentParts.length}\nFiles: ${currentAttachments.length}`);
+                    } else {
+                        alert('❌ Error saving vehicle!');
+                    }
+                }).catch(error => {
+                    console.error('Error processing photo:', error);
+                    alert('Error processing photo: ' + error.message);
+                });
+            } else {
+                alert('Please fill all required fields (Make, Model, Year, Price, and VIN)!');
+            }
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateInventoryList() {
+            const inventoryList = document.getElementById('inventoryList');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filteredInventory = inventory;
+            
+            if (searchTerm) {
+                filteredInventory = inventory.filter(vehicle => 
+                    vehicle.make.toLowerCase().includes(searchTerm) ||
+                    vehicle.model.toLowerCase().includes(searchTerm) ||
+                    vehicle.location.toLowerCase().includes(searchTerm) ||
+                    (vehicle.vin && vehicle.vin.toLowerCase().includes(searchTerm)) ||
+                    vehicle.parts.some(part => part.name.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            if (filteredInventory.length === 0) {
+                inventoryList.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No vehicles found.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            inventoryList.innerHTML = filteredInventory.map(vehicle => `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card vehicle-card h-100">
+                        ${vehicle.photo ? 
+                            `<img src="${vehicle.photo}" class="card-img-top" alt="${vehicle.make} ${vehicle.model}" style="height: 200px; object-fit: cover;">` : 
+                            `<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-car fa-3x text-muted"></i>
+                            </div>`
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</h5>
+                            <p class="card-text">
+                                <strong>Price:</strong> $${vehicle.price}<br>
+                                <strong>VIN:</strong> ${vehicle.vin}<br>
+                                <strong>Location:</strong> ${vehicle.location}<br>
+                                <strong>Added:</strong> ${vehicle.dateAdded}
+                            </p>
+                            
+                            <div class="parts-section">
+                                <h6>Parts (${vehicle.parts.length}):</h6>
+                                ${vehicle.parts.map(part => `
+                                    <div class="part-item d-flex justify-content-between align-items-center mb-1 p-1 rounded" 
+                                         style="background: ${part.status === 'sold' ? '#d4edda' : part.status === 'reserved' ? '#fff3cd' : '#e9ecef'}">
+                                        <span>${part.name} - $${part.price}</span>
+                                        <select class="form-select form-select-sm" style="width: auto;" onchange="updatePartStatus(${vehicle.id}, ${part.id}, this.value)">
+                                            <option value="available" ${part.status === 'available' ? 'selected' : ''}>Available</option>
+                                            <option value="sold" ${part.status === 'sold' ? 'selected' : ''}>Sold</option>
+                                            <option value="reserved" ${part.status === 'reserved' ? 'selected' : ''}>Reserved</option>
+                                        </select>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-danger btn-sm" onclick="deleteVehicle(${vehicle.id})">Delete Vehicle</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updatePartStatus(vehicleId, partId, newStatus) {
+            const vehicle = inventory.find(v => v.id === vehicleId);
+            if (vehicle) {
+                const part = vehicle.parts.find(p => p.id === partId);
+                if (part) {
+                    part.status = newStatus;
+                    saveInventory();
+                    updateInventoryList();
+                }
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('make').value = '';
+            document.getElementById('model').value = '';
+            document.getElementById('year').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('photoUpload').value = '';
+            document.getElementById('customPartName').value = '';
+            document.getElementById('customPartPrice').value = '';
+            document.getElementById('vinInput').value = '';
+            document.getElementById('color').value = '';
+            document.getElementById('engine').value = '';
+            document.getElementById('trim').value = '';
+            
+            const fileInput = document.getElementById('fileAttachments');
+            if (fileInput) fileInput.value = '';
+            currentAttachments = [];
+            updateAttachmentsPreview();
+            
+            currentParts = [];
+            updatePartsPreview();
+            generatePriceSuggestions();
         }
 
         function clearVINData() {
@@ -1505,150 +1229,156 @@
             updatePartsPreview();
         }
 
-        function readFileAsDataURL(file) {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function updateInventoryList() {
-            const inventoryList = document.getElementById('inventoryList');
-            const searchTerm = document.getElementById('searchInventory').value.toLowerCase();
-            const filterMake = document.getElementById('filterMake').value;
-            const filterYear = document.getElementById('filterYear').value;
-            
-            let filteredInventory = inventory.filter(vehicle => {
-                const matchesSearch = 
-                    vehicle.make.toLowerCase().includes(searchTerm) ||
-                    vehicle.model.toLowerCase().includes(searchTerm) ||
-                    vehicle.vin.toLowerCase().includes(searchTerm);
-                
-                const matchesMake = !filterMake || vehicle.make === filterMake;
-                const matchesYear = !filterYear || vehicle.year.toString() === filterYear;
-                
-                return matchesSearch && matchesMake && matchesYear;
-            });
-            
-            if (filteredInventory.length === 0) {
-                inventoryList.innerHTML = `
-                    <div class="col-12">
-                        <div class="alert alert-warning text-center">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            No vehicles match your search criteria.
-                        </div>
-                    </div>
-                `;
-                return;
+        function deleteVehicle(id) {
+            if (confirm('Are you sure you want to delete this vehicle and all its parts?')) {
+                inventory = inventory.filter(vehicle => vehicle.id !== id);
+                updateInventoryList();
+                updateDashboard();
+                saveInventory();
             }
-            
-            inventoryList.innerHTML = filteredInventory.map(vehicle => `
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card vehicle-card h-100">
-                        ${vehicle.photo ? 
-                            `<img src="${vehicle.photo}" class="card-img-top" alt="${vehicle.make} ${vehicle.model}" style="height: 200px; object-fit: cover;">` : 
-                            `<div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
-                                <i class="fas fa-car fa-3x text-muted"></i>
-                            </div>`
-                        }
-                        <div class="card-body">
-                            <h5 class="card-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</h5>
-                            <p class="card-text">
-                                <small class="text-muted">VIN: ${vehicle.vin}</small><br>
-                                <strong>$${vehicle.price}</strong><br>
-                                ${vehicle.color} • ${vehicle.engine} • ${vehicle.trim}<br>
-                                <span class="badge bg-info">${vehicle.parts.length} parts</span>
-                                ${vehicle.attachments && vehicle.attachments.length > 0 ? 
-                                    `<span class="badge bg-secondary">${vehicle.attachments.length} files</span>` : ''}
-                            </p>
-                            <div class="mt-2">
-                                ${vehicle.parts.slice(0, 3).map(part => 
-                                    `<span class="badge bg-light text-dark part-badge me-1 mb-1">${part.name}</span>`
-                                ).join('')}
-                                ${vehicle.parts.length > 3 ? 
-                                    `<span class="badge bg-light text-dark part-badge">+${vehicle.parts.length - 3} more</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <small class="text-muted">Added: ${vehicle.dateAdded} | Location: ${vehicle.location}</small>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
         }
 
-        function updateDashboard() {
-            document.getElementById('totalVehicles').textContent = inventory.length;
-            
-            const totalValue = inventory.reduce((sum, vehicle) => sum + vehicle.price, 0);
-            document.getElementById('totalValue').textContent = '$' + totalValue.toLocaleString();
-            
-            const totalParts = inventory.reduce((sum, vehicle) => sum + vehicle.parts.length, 0);
-            document.getElementById('totalParts').textContent = totalParts;
-            
-            document.getElementById('recentSales').textContent = salesHistory.length;
-        }
-
-        function updateFilters() {
-            const makes = [...new Set(inventory.map(vehicle => vehicle.make))].sort();
-            const years = [...new Set(inventory.map(vehicle => vehicle.year))].sort((a, b) => b - a);
-            
-            const makeFilter = document.getElementById('filterMake');
-            const yearFilter = document.getElementById('filterYear');
-            
-            makeFilter.innerHTML = '<option value="">All Makes</option>' +
-                makes.map(make => `<option value="${make}">${make}</option>`).join('');
-                
-            yearFilter.innerHTML = '<option value="">All Years</option>' +
-                years.map(year => `<option value="${year}">${year}</option>`).join('');
-        }
-
-        function clearFilters() {
-            document.getElementById('searchInventory').value = '';
-            document.getElementById('filterMake').value = '';
-            document.getElementById('filterYear').value = '';
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
             updateInventoryList();
         }
 
-        function saveInventory() {
-            localStorage.setItem('junkyardInventory', JSON.stringify(inventory));
+        // Dashboard functions
+        function updateDashboard() {
+            const totalVehicles = document.getElementById('totalVehicles');
+            const totalValue = document.getElementById('totalValue');
+            const totalParts = document.getElementById('totalParts');
+            const recentSales = document.getElementById('recentSales');
+            
+            if (totalVehicles) totalVehicles.textContent = inventory.length;
+            
+            const totalInventoryValue = inventory.reduce((sum, vehicle) => sum + vehicle.price, 0);
+            if (totalValue) totalValue.textContent = '$' + totalInventoryValue.toLocaleString();
+            
+            const totalPartsCount = inventory.reduce((sum, vehicle) => sum + vehicle.parts.length, 0);
+            if (totalParts) totalParts.textContent = totalPartsCount;
+            
+            if (recentSales) recentSales.textContent = '0';
         }
 
-        function loadInventory() {
+        // Debug functions
+        function showDebugInfo() {
+            const debugInfo = document.getElementById('debugInfo');
             const saved = localStorage.getItem('junkyardInventory');
-            if (saved) {
-                inventory = JSON.parse(saved);
+            
+            debugInfo.innerHTML = `
+                <strong>Local Storage Status:</strong> ${saved ? 'Data Found' : 'No Data'}<br>
+                <strong>Vehicles in Memory:</strong> ${inventory.length}<br>
+                <strong>Local Storage Size:</strong> ${saved ? saved.length + ' characters' : 'N/A'}<br>
+                <strong>Last Save:</strong> ${new Date().toLocaleTimeString()}<br>
+                <strong>Browser:</strong> ${navigator.userAgent}
+            `;
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL data?')) {
+                localStorage.removeItem('junkyardInventory');
+                localStorage.removeItem('partsDatabase');
+                inventory = [];
+                currentParts = [];
+                currentAttachments = [];
                 updateInventoryList();
                 updateDashboard();
-                updateFilters();
+                alert('All data cleared! Page will reload.');
+                setTimeout(() => location.reload(), 1000);
             }
         }
 
-        function loadSales() {
-            // Sales history loading logic
-            console.log('Sales history loaded:', salesHistory.length, 'records');
+        function testStorage() {
+            const testVehicle = {
+                id: Date.now(),
+                make: 'TEST',
+                model: 'CAR',
+                year: 2023,
+                price: 1000,
+                location: 'Test Lot',
+                vin: 'TESTVIN1234567890',
+                color: 'Red',
+                engine: '2.0L I4',
+                trim: 'Base',
+                parts: [{id: 1, name: 'Test Part', price: 100, condition: 'good', status: 'available'}],
+                dateAdded: new Date().toLocaleDateString()
+            };
+            
+            inventory.push(testVehicle);
+            saveInventory();
+            updateInventoryList();
+            updateDashboard();
+            alert('Test vehicle added! Check if it appears in the list.');
         }
 
-        // ENHANCED: Initialize app with parts database
-        function initializeApp() {
-            initializePartsDatabase();
-            // Your existing initialization code...
+        function quickTest() {
+            const testCar = {
+                id: Date.now(),
+                make: 'PhoneTest',
+                model: 'MobileCar',
+                year: 2024,
+                price: 2500,
+                location: 'Phone Lot',
+                vin: 'PHONE1234567890',
+                color: 'Blue',
+                engine: '3.5L V6',
+                trim: 'Sport',
+                parts: [{id: 1, name: 'Phone Part', price: 150, condition: 'good', status: 'available'}],
+                dateAdded: new Date().toLocaleString()
+            };
+            
+            inventory.push(testCar);
+            saveInventory();
+            updateInventoryList();
+            updateDashboard();
+            alert('Phone test completed! Check the list.');
+        }
+
+        // Save/load inventory
+        function saveInventory() {
+            try {
+                localStorage.setItem('junkyardInventory', JSON.stringify(inventory));
+                console.log('Inventory saved:', inventory.length, 'vehicles');
+                return true;
+            } catch (error) {
+                console.error('Error saving inventory:', error);
+                alert('Error saving data: ' + error.message);
+                return false;
+            }
+        }
+
+        function loadInventory() {
+            try {
+                const saved = localStorage.getItem('junkyardInventory');
+                if (saved) {
+                    inventory = JSON.parse(saved);
+                    console.log('Inventory loaded:', inventory.length, 'vehicles');
+                    updateInventoryList();
+                    updateDashboard();
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Error loading inventory:', error);
+                alert('Error loading data: ' + error.message);
+                return false;
+            }
         }
 
         // Initialize app
-        document.addEventListener('DOMContentLoaded', function() {
+        function initializeApp() {
+            initializePartsDatabase();
             loadInventory();
-            loadSales();
-            initializeApp();
             
-            // Set up search and filter events
-            document.getElementById('searchInventory').addEventListener('input', updateInventoryList);
-            document.getElementById('filterMake').addEventListener('change', updateInventoryList);
-            document.getElementById('filterYear').addEventListener('change', updateInventoryList);
+            // Set up event listeners
+            document.getElementById('searchInput').addEventListener('input', updateInventoryList);
             
-            console.log('Premier Auto Truck & Salvage Inventory with AI VIN Scanner loaded!');
-        });
+            console.log('Premier Auto Truck & Salvage Inventory loaded!');
+        }
+
+        // Start the application
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
